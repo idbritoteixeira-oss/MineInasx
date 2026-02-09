@@ -6,8 +6,7 @@ import 'package:battery_plus/battery_plus.dart';
 import 'package:system_info2/system_info2.dart';
 
 // NOVOS IMPORTS DE SEGURANÇA (Substituindo cryptography.dart)
-import '../../core/security/enx1_9.dart';
-import '../../core/security/enx_base.dart';
+import '../../core/security/enx_security.dart';
 import '../../core/network/inasx_network.dart';
 
 class InasxStarted extends StatefulWidget {
