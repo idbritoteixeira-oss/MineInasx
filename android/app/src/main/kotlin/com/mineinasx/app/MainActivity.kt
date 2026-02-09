@@ -1,4 +1,4 @@
-package com.mineinasx.workspace
+package com.mineinasx.app
 
 import io.flutter.embedding.android.FlutterActivity
 
