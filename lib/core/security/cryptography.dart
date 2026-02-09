@@ -1,18 +1,19 @@
 import 'dart:math';
 
-class EnXLow {
-  // Uso de BigInt em todos os níveis para evitar overflow e garantir paridade com C++
-  static BigInt enx1(BigInt seed) => 
+class EnX_Low {
+  // Mantendo a nomenclatura EnX_Low para paridade total com o C++
+  static BigInt EnX1(BigInt seed) => 
       (seed * BigInt.from(137) + BigInt.from(11)) % BigInt.from(1000);
 
-  static BigInt enx3(BigInt seed) => 
-      (enx1(seed) * BigInt.from(827) + BigInt.from(97)) % BigInt.from(1000000);
+  static BigInt EnX3(BigInt seed) => 
+      (EnX1(seed) * BigInt.from(827) + BigInt.from(97)) % BigInt.from(1000000);
 
-  static BigInt enx6(BigInt seed) => 
-      (enx3(seed) * BigInt.from(1000003) + BigInt.from(7)) % BigInt.from(1000000000);
+  static BigInt EnX6(BigInt seed) => 
+      (EnX3(seed) * BigInt.from(1000003) + BigInt.from(7)) % BigInt.from(1000000000);
 
-  static BigInt enx9(BigInt seed) {
-    BigInt s6 = enx6(seed);
+  static BigInt EnX9(BigInt seed) {
+    // Simulação do __int128: (EnX6 * 1234567 + 1) % 10^12
+    BigInt s6 = EnX6(seed);
     BigInt multiplier = BigInt.from(1234567);
     BigInt divisor = BigInt.from(1000000000000);
     return (s6 * multiplier + BigInt.one) % divisor;
@@ -21,15 +22,20 @@ class EnXLow {
 
 class EnX18 {
   static String generate(BigInt seed) {
-    String raw = EnXLow.enx9(seed).toString();
+    // O EnX18 expande o EnX9 para 36 caracteres
+    String raw = EnX_Low.EnX9(seed).toString();
     return EnXBase.expandir(raw, 36);
   }
 }
 
 class EnXBase {
-  // Função para garantir o preenchimento de zeros à esquerda (to_string_pad)
-  static String toStringPad(BigInt n, int width) {
-    return n.toString().padLeft(width, '0');
+  // Implementação idêntica ao EnXBase do C++
+  static String to_string_pad(BigInt n, int width) {
+    String s = n.toString();
+    if (s.length > width) {
+      return s.substring(s.length - width);
+    }
+    return s.padLeft(width, '0');
   }
 
   static String expandir(String base, int alvo) {
@@ -37,16 +43,22 @@ class EnXBase {
     while (res.length < alvo) {
       BigInt n = BigInt.zero;
       for (int i = 0; i < res.length; i++) {
+        // Multiplicador de 31 conforme o algoritmo EnX
         n += BigInt.from(res.codeUnitAt(i) * 31);
       }
       
-      // Multiplicação idêntica ao EnX OS: n * (res.length + 1)
+      // Cálculo: n * (tamanho atual + 1)
       BigInt calc = n * BigInt.from(res.length + 1);
-      String pad = toStringPad(calc, 3);
       
-      // Pega apenas os últimos 3 caracteres conforme a lógica original
-      res += pad.substring(pad.length - 3);
+      // No C++, o buffer concatena 3 dígitos por vez
+      String pad = to_string_pad(calc, 3);
+      res += pad;
     }
-    return res.substring(res.length - alvo);
+    
+    // Retorna os últimos 'alvo' caracteres conforme a hierarquia EnX OS
+    if (res.length > alvo) {
+      return res.substring(res.length - alvo);
+    }
+    return res;
   }
 }

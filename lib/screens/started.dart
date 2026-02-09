@@ -11,7 +11,7 @@ import '../../core/network/inasx_network.dart';
 
 class InasxStarted extends StatefulWidget {
   final String idInasx;
-  const InasxStarted({super.key, this.idInasx = "USER_DEFAULT_ID"});
+  const InasxStarted({super.key, this.idInasx = "10362457985469070687"});
 
   @override
   State<InasxStarted> createState() => _InasxStartedState();
@@ -27,8 +27,7 @@ class _InasxStartedState extends State<InasxStarted> {
     serverUrl: 'https://8b48ce67-8062-40e3-be2d-c28fd3ae4f01-00-117turwazmdmc.janeway.replit.dev'
   );
   
-  // ATUALIZAÇÃO: Agora monitoramos RAM em vez de CPU
-  double ramUsage = 0.12; // Base de 12% de uso (Kernel + Framework)
+  double ramUsage = 0.12; 
   int batteryLevel = 100;
   String currentNonce = "0";
   double sessionInx = 0.0000;
@@ -62,9 +61,6 @@ class _InasxStartedState extends State<InasxStarted> {
       if (Platform.isAndroid) {
         AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
         deviceName = "${androidInfo.manufacturer} ${androidInfo.model}";
-      } else if (Platform.isIOS) {
-        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-        deviceName = iosInfo.name;
       } else {
         deviceName = "EnX Desktop Worker";
       }
@@ -89,64 +85,58 @@ class _InasxStartedState extends State<InasxStarted> {
     }
   }
 
+  // LÓGICA IDENTICA AO SCRIPTWORKER.CPP
   void _startMiningProtocol() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    _addLog("Hardware: $deviceName");
-    _addLog("Monitor de Memoria: ATIVO");
+    _addLog("--- [EnX OS PoP Worker] ---");
+    _addLog("[INFO] ID: ${widget.idInasx}");
+    _addLog("[STATUS] Iniciando participação...");
     
     while (mounted) {
+      // 1. Sincroniza com o ciclo (time / 180) - Paridade absoluta com C++
       int cycleSeed = DateTime.now().millisecondsSinceEpoch ~/ 1000 ~/ 180;
+      
       _addLog("Iniciando Ciclo: $cycleSeed");
       
-      _addLog("Alocando buffers PoP...");
-      
+      // 2. Gera a Prova (Action Hash) usando EnX9
       BigInt idBig = BigInt.parse(widget.idInasx);
       BigInt seedBig = BigInt.from(cycleSeed);
       
+      // XOR e Hash idêntico ao script
       BigInt actionRaw = EnXLow.enx9(idBig ^ seedBig);
       String actionHash = EnXBase.toStringPad(actionRaw, 12);
       
-      // Simulação de carga na RAM durante a computação do Hash
-      for (int i = 0; i < 6; i++) {
-        await Future.delayed(const Duration(milliseconds: 400));
-        if (mounted) {
-          setState(() {
-            currentNonce = "0x" + actionHash.substring(0, 6).toUpperCase() + Random().nextInt(999).toString();
-            // RAM sobe para ~70-85% durante a validação
-            ramUsage = 0.72 + (Random().nextDouble() * 0.13);
-          });
-        }
-      }
-      
-      _addLog("Quest (Buffer -> Rede)...");
+      setState(() {
+        currentNonce = "0x${actionHash.toUpperCase()}";
+        ramUsage = 0.65 + (Random().nextDouble() * 0.1); // Simula carga
+      });
+
+      // 3. Envio e Espera de Resposta
+      _addLog("Quest: $actionHash");
       String response = await _network.sendSubmitPop(widget.idInasx, actionHash, cycleSeed);
       
-      if (response.startsWith("POP_OK")) {
+      if (response.contains("POP_OK")) {
         double reward = 0.0;
         try {
           List<String> parts = response.split('|');
-          if (parts.length > 1) reward = double.parse(parts[1]);
-        } catch (_) { reward = 0.03; }
+          reward = parts.length > 1 ? double.parse(parts[1]) : 0.09;
+        } catch (_) { reward = 0.09; }
 
         setState(() {
           blocksValidated++;
           sessionInx += reward; 
-          ramUsage = 0.15; // Libera memória após sucesso
+          ramUsage = 0.12; 
         });
-        _addLog("Validado: +${reward.toStringAsFixed(3)} INX");
+        _addLog("[SISTEMA] Recompensado: +$reward INX");
       } 
-      else if (response == "ERR_LOW_BALANCE") {
-        setState(() => ramUsage = 0.05); // Idle mínimo
-        _addLog("CRITICO: Saldo < 100 INX");
-        break; 
-      }
       else {
-        _addLog("Rejeitado: $response");
-        setState(() => ramUsage = 0.20);
+        _addLog("Resposta: $response");
+        setState(() => ramUsage = 0.15);
       }
 
-      _addLog("Sincronizando Ciclo...");
-      await Future.delayed(const Duration(seconds: 30)); 
+      // 4. Sincronizado com o ciclo: sleep(180)
+      _addLog("Aguardando proximo ciclo (180s)...");
+      await Future.delayed(const Duration(seconds: 180)); 
     }
   }
 
@@ -164,10 +154,6 @@ class _InasxStartedState extends State<InasxStarted> {
               Text(
                 "[ $deviceName ]",
                 style: const TextStyle(color: Color(0xFF64FFDA), fontFamily: 'Courier', fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                "ID: ${widget.idInasx} | Bateria: $batteryLevel%",
-                style: const TextStyle(color: Colors.white70, fontFamily: 'Courier', fontSize: 10),
               ),
               const Divider(color: Color(0xFF1D2A4E)),
               
@@ -214,12 +200,9 @@ class _InasxStartedState extends State<InasxStarted> {
                 ),
               ),
               
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  "RAM_HASH: ${currentNonce.length > 20 ? currentNonce.substring(0, 20) : currentNonce}", 
-                  style: const TextStyle(color: Colors.white38, fontSize: 10, fontFamily: 'Courier')
-                ),
+              Text(
+                "HASH_PROOF: $currentNonce", 
+                style: const TextStyle(color: Colors.white38, fontSize: 10, fontFamily: 'Courier')
               ),
             ],
           ),
