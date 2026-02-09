@@ -1,0 +1,90 @@
+name: apk mine inasx
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.0'
+          channel: 'stable'
+          cache: false
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.2
+          cache-disabled: true
+
+      - name: Restore Keystore and Key Properties
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/mineinasx-release.jks
+          echo "${{ secrets.KEY_PROPERTIES }}" > android/key.properties
+          cp android/key.properties android/app/key.properties
+        shell: bash
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Create local.properties
+        run: |
+          mkdir -p android
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+          echo "sdk.dir=$ANDROID_SDK_ROOT" >> android/local.properties
+
+      - name: Restore Gradle Wrapper
+        run: |
+          ANDROID_DIR=$(find . -name "android" -type d | head -n 1)
+          cd $ANDROID_DIR
+          if [ -f ./gradlew ]; then
+            chmod +x ./gradlew
+            ./gradlew wrapper --gradle-version 8.2
+          else
+            gradle wrapper --gradle-version 8.2
+            chmod +x ./gradlew || true
+          fi
+
+      - name: Install Android SDK platforms & build-tools (SDK 35)
+        run: |
+          set -euo pipefail
+          SDKMANAGER=$(find $ANDROID_SDK_ROOT -name "sdkmanager" | head -n 1)
+          echo "Using sdkmanager: $SDKMANAGER"
+          "$SDKMANAGER" --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_SDK_ROOT" --licenses || true
+        shell: bash
+
+      - name: Clean build
+        run: flutter clean
+
+      - name: Build APK
+        run: |
+          PROJECT_ROOT=$(find . -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
+          cd $PROJECT_ROOT
+          # Adicionado '|| true' para que a Action não pare se o Flutter não "enxergar" o APK que o Gradle gerou
+          flutter build apk --release --no-tree-shake-icons || true
+
+      - name: Verify and Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnX-Mine-Inasx-Release
+          # Busca recursiva para encontrar o APK em qualquer um dos caminhos possíveis de build
+          path: |
+            **/build/app/outputs/flutter-apk/app-release.apk
+            **/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+             

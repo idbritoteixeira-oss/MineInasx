@@ -1,0 +1,28 @@
+entrypoint = "lib/main.dart"
+modules = ["flutter-3.19"] # Tente mudar para o módulo específico do flutter se disponível
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+# O segredo: Adicionar o comando para baixar as dependências antes de rodar
+run = ["sh", "-c", "flutter pub get && flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8080"]
+deploymentTarget = "cloudrun"
+
+[agent]
+expertMode = true
+
+[workflows]
+
+[[workflows.workflow]]
+name = "Inasx"
+mode = "parallel"
+author = 54086195
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8080"
+
+[[ports]]
+localPort = 8080
+externalPort = 80

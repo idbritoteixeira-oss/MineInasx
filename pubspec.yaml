@@ -1,0 +1,50 @@
+name: Inasx
+description: "EnX OS - Mine Inasx"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  # Essencial para o som de boot da Splash e os bipes de ativação
+  audioplayers: ^5.2.1
+  http: ^1.6.0
+  intl: ^0.20.2
+  url_launcher: ^6.3.1
+  device_info_plus: ^10.1.0
+  battery_plus: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  # Gerador de ícones para o APK não ficar com o logo do Flutter
+  flutter_launcher_icons: ^0.13.1
+
+# Configuração do Ícone do App
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/logo.png"
+  adaptive_icon_background: "#020817"
+  adaptive_icon_foreground: "assets/images/logo.png"
+
+flutter:
+  uses-material-design: true
+
+  # DECLARAÇÃO DE ASSETS (Onde o Flutter busca imagens e sons)
+  assets:
+    - assets/images/logo.png
+    - assets/sounds/into.mp3
+    - assets/sounds/coin.mp3
+
+  # Se você for usar fontes personalizadas no futuro, elas entram aqui
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/custom-fonts/#from-packages

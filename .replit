@@ -1,0 +1,18 @@
+entrypoint = "main.dart"
+modules = ["dart-3.3"]
+
+[nix]
+channel="stable-24_05"
+packages = ["unzip", "flutter", "zulu17"]
+
+[deployment]
+run = ["dart", "main.dart"]
+deploymentTarget = "cloudrun"
+
+[agent]
+expertMode = true
+
+[[ports]]
+localPort = 8080
+externalPort = 80
+exposeLocalhost = true
