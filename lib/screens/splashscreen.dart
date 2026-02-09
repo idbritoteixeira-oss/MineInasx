@@ -106,7 +106,7 @@ class _EnXSplashScreenState extends State<EnXSplashScreen> {
                                 _buildMenuButton(
                                   context,
                                   "INICIAR MINERAÇÃO", 
-                                  '/initiation',   // ROTA ATUALIZADA
+                                  '/initiation',
                                   const Color(0xFF1D2A4E).withOpacity(0.8),
                                 ),
                                 const SizedBox(height: 15),
@@ -123,6 +123,7 @@ class _EnXSplashScreenState extends State<EnXSplashScreen> {
                                   style: TextStyle(
                                     color: const Color(0xFF64FFDA).withOpacity(0.2),
                                     fontSize: 7,
+                                    fontFamily: 'monospace', // Atualizado
                                     letterSpacing: 4,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -150,7 +151,6 @@ class _EnXSplashScreenState extends State<EnXSplashScreen> {
           if (route == 'com.inasx.app') {
              debugPrint("Redirecionando para registro externo...");
           } else {
-            // Agora usa a rota nomeada definida no main.dart
             Navigator.pushNamed(context, route);
           }
         },
@@ -167,6 +167,7 @@ class _EnXSplashScreenState extends State<EnXSplashScreen> {
           label,
           style: const TextStyle(
             fontSize: 11,
+            fontFamily: 'monospace', // Atualizado
             fontWeight: FontWeight.w600,
             letterSpacing: 1.5,
           ),

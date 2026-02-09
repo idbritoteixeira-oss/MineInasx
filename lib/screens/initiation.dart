@@ -96,7 +96,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg, style: const TextStyle(fontFamily: 'Courier', fontSize: 12)),
+        content: Text(msg, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
         backgroundColor: const Color(0xFFE53935),
         duration: const Duration(seconds: 3),
       ),
@@ -137,6 +137,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
                   style: TextStyle(
                     color: const Color(0xFF64FFDA).withOpacity(0.7),
                     fontSize: 10,
+                    fontFamily: 'monospace',
                     letterSpacing: 3,
                     fontWeight: FontWeight.bold,
                   ),
@@ -146,10 +147,10 @@ class _InasxInitiationState extends State<InasxInitiation> {
                 TextField(
                   controller: _idController,
                   enabled: !_isValidating,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'Courier'),
+                  style: const TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'monospace'),
                   decoration: InputDecoration(
                     hintText: "INSIRA SEU ID_INASX",
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.2)),
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontFamily: 'monospace'),
                     filled: true,
                     fillColor: const Color(0xFF1D2A4E).withOpacity(0.3),
                     contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
@@ -180,7 +181,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
                     ),
                     const Text(
                       "LEMBRAR ID NO DISPOSITIVO",
-                      style: TextStyle(color: Colors.white38, fontSize: 9, fontFamily: 'Courier'),
+                      style: TextStyle(color: Colors.white38, fontSize: 9, fontFamily: 'monospace'),
                     ),
                   ],
                 ),
@@ -209,7 +210,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
                     ),
                     child: _isValidating 
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF64FFDA)))
-                      : const Text("INICIAR PROCESSO", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                      : const Text("INICIAR PROCESSO", style: TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.bold, letterSpacing: 2)),
                   ),
                 ),
 
@@ -222,7 +223,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
                     color: _isValidating ? const Color(0xFF64FFDA) : Colors.white.withOpacity(0.1),
                     fontSize: 8,
                     letterSpacing: 1.5,
-                    fontFamily: 'Courier',
+                    fontFamily: 'monospace',
                   ),
                 ),
                 const SizedBox(height: 30),

@@ -3,9 +3,8 @@ import 'dart:async';
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:battery_plus/battery_plus.dart';
-import 'package:system_info2/system_info2.dart';
 
-// NOVOS IMPORTS DE SEGURANÇA (Substituindo cryptography.dart)
+// NOVOS IMPORTS DE SEGURANÇA
 import '../../core/security/enx_security.dart';
 import '../../core/network/inasx_network.dart';
 
@@ -55,6 +54,37 @@ class _InasxStartedState extends State<InasxStarted> {
     super.dispose();
   }
 
+  // Monitor de RAM via Kernel (Conserta o erro de leitura no Android)
+  Future<void> _updateRamUsage() async {
+    try {
+      if (Platform.isAndroid) {
+        // Lê diretamente do sistema de arquivos do Kernel
+        final result = await Process.run('cat', ['/proc/meminfo']);
+        final lines = result.stdout.toString().split('\n');
+        
+        int memTotal = 0;
+        int memAvailable = 0;
+
+        for (var line in lines) {
+          if (line.contains('MemTotal:')) {
+            memTotal = int.parse(RegExp(r'\d+').firstMatch(line)!.group(0)!);
+          }
+          if (line.contains('MemAvailable:')) {
+            memAvailable = int.parse(RegExp(r'\d+').firstMatch(line)!.group(0)!);
+          }
+        }
+
+        if (mounted && memTotal > 0) {
+          setState(() {
+            ramUsage = (memTotal - memAvailable) / memTotal;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Erro RAM: $e");
+    }
+  }
+
   void _initSystem() async {
     // 1. Hardware Info
     try {
@@ -66,18 +96,8 @@ class _InasxStartedState extends State<InasxStarted> {
       }
     } catch (_) { deviceName = "Unknown Worker"; }
 
-    // 2. RAM Monitor (Real Hardware)
-    _ramTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (mounted) {
-        try {
-          int total = SysInfo.getTotalPhysicalMemory();
-          int free = SysInfo.getFreePhysicalMemory();
-          setState(() => ramUsage = (total - free) / total);
-        } catch (_) { 
-          setState(() => ramUsage = 0.12); 
-        }
-      }
-    });
+    // 2. RAM Monitor (Polling de 4s)
+    _ramTimer = Timer.periodic(const Duration(seconds: 4), (_) => _updateRamUsage());
 
     // 3. Battery Monitor
     _batterySubscription = _battery.onBatteryStateChanged.listen((_) async {
@@ -104,7 +124,6 @@ class _InasxStartedState extends State<InasxStarted> {
     });
   }
 
-  // --- LÓGICA ESPELHADA DO WORKER.CPP ATUALIZADA ---
   void _workerLoop() async {
     await Future.delayed(const Duration(seconds: 1)); 
     
@@ -113,29 +132,20 @@ class _InasxStartedState extends State<InasxStarted> {
     _addLog("[STATUS] Sincronizando com ciclo de rede...");
 
     while (mounted) {
-      // 1. Sincronização Estrita de Ciclo
       int timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       int cycleSeed = timestamp ~/ 180;
 
       _addLog("Iniciando Ciclo: $cycleSeed");
 
-      // 2. Geração da Prova (Paridade uint64_t)
-      // Forçamos o toUnsigned(64) para garantir que o ID não seja tratado como assinado
       BigInt idVal = BigInt.parse(widget.idInasx).toUnsigned(64);
       BigInt seedVal = BigInt.from(cycleSeed).toUnsigned(64);
-
-      // XOR idêntico ao C++: h.id_private = std::hash{}(seed + key)
       BigInt argument = (idVal ^ seedVal).toUnsigned(64);
 
-      // Cálculo EnX9 (Filtro de 12 dígitos)
       BigInt actionRaw = EnX_Low.EnX9(argument);
-
-      // Formatação to_string_pad (Garante paridade com std::reverse do C++)
       String actionHash = EnXBase.to_string_pad(actionRaw, 12);
 
       setState(() => currentNonce = actionHash);
 
-      // 3. Envio via Raw Text (InasxNetwork atualizado para evitar %7C)
       _addLog("Quest: $actionHash");
       
       String response = await _network.sendSubmitPop(widget.idInasx, actionHash, cycleSeed);
@@ -156,12 +166,9 @@ class _InasxStartedState extends State<InasxStarted> {
         _addLog("Resposta: $response");
       }
 
-      // 4. Inteligência de Espera (Prevenção de dessincronia)
-      // Calcula quantos segundos faltam para acabar o ciclo atual de 180s
       int secondsRemaining = 180 - (timestamp % 180);
       _addLog("Aguardando próximo ciclo (${secondsRemaining}s)...");
       
-      // Dorme o tempo restante + 2s de margem de segurança para o servidor virar
       await Future.delayed(Duration(seconds: secondsRemaining + 2));
     }
   }
@@ -176,7 +183,7 @@ class _InasxStartedState extends State<InasxStarted> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("[ $deviceName ]", style: const TextStyle(color: Color(0xFF64FFDA), fontFamily: 'Courier', fontWeight: FontWeight.bold)),
+              Text("[ $deviceName ]", style: const TextStyle(color: Color(0xFF64FFDA), fontFamily: 'monospace', fontWeight: FontWeight.bold)),
               const Divider(color: Colors.white24),
               
               const SizedBox(height: 5),
@@ -213,7 +220,7 @@ class _InasxStartedState extends State<InasxStarted> {
                   child: ListView.builder(
                     controller: _scrollController,
                     itemCount: logs.length,
-                    itemBuilder: (c, i) => Text(logs[i], style: const TextStyle(color: Colors.green, fontFamily: 'Courier', fontSize: 11)),
+                    itemBuilder: (c, i) => Text(logs[i], style: const TextStyle(color: Colors.green, fontFamily: 'monospace', fontSize: 11)),
                   ),
                 ),
               ),
@@ -221,7 +228,7 @@ class _InasxStartedState extends State<InasxStarted> {
               const SizedBox(height: 10),
               Text(
                 "ID_ACTIVE: ${widget.idInasx} | HASH: $currentNonce",
-                style: const TextStyle(color: Colors.white30, fontFamily: 'Courier', fontSize: 10),
+                style: const TextStyle(color: Colors.white30, fontFamily: 'monospace', fontSize: 10),
               ),
             ],
           ),
@@ -233,15 +240,15 @@ class _InasxStartedState extends State<InasxStarted> {
   Widget _buildBar(String label, double pct) {
     int slots = (pct * 20).toInt().clamp(0, 20);
     String bar = "|" * slots;
-    return Text("$bar $label", style: const TextStyle(color: Colors.white, fontFamily: 'Courier', fontSize: 10));
+    return Text("$bar $label", style: const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 10));
   }
 
   Widget _row(String k, String v) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(k, style: const TextStyle(color: Color(0xFF64FFDA), fontFamily: 'Courier', fontSize: 11)),
-        Text(v, style: const TextStyle(color: Colors.white, fontFamily: 'Courier', fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(k, style: const TextStyle(color: Color(0xFF64FFDA), fontFamily: 'monospace', fontSize: 11)),
+        Text(v, style: const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 12, fontWeight: FontWeight.bold)),
       ],
     );
   }
