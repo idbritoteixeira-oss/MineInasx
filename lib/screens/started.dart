@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:battery_plus/battery_plus.dart';
 
-// Importações atualizadas conforme a nova hierarquia de pastas
+// Importações oficiais do seu projeto
 import '../../core/security/cryptography.dart'; 
 import '../../core/network/inasx_network.dart';
 
@@ -23,12 +23,12 @@ class _InasxStartedState extends State<InasxStarted> {
   final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
   final Battery _battery = Battery();
   
-  // ATUALIZAÇÃO: Instância conectada ao servidor no Replit via HTTPS
   final InasxNetwork _network = InasxNetwork(
     serverUrl: 'https://8b48ce67-8062-40e3-be2d-c28fd3ae4f01-00-117turwazmdmc.janeway.replit.dev'
   );
   
-  double cpuUsage = 0.15; 
+  // ATUALIZAÇÃO: Agora monitoramos RAM em vez de CPU
+  double ramUsage = 0.12; // Base de 12% de uso (Kernel + Framework)
   int batteryLevel = 100;
   String currentNonce = "0";
   double sessionInx = 0.0000;
@@ -83,11 +83,7 @@ class _InasxStartedState extends State<InasxStarted> {
       });
       Timer(const Duration(milliseconds: 100), () {
         if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-          );
+          _scrollController.position.jumpTo(_scrollController.position.maxScrollExtent);
         }
       });
     }
@@ -96,55 +92,66 @@ class _InasxStartedState extends State<InasxStarted> {
   void _startMiningProtocol() async {
     await Future.delayed(const Duration(milliseconds: 500));
     _addLog("Hardware: $deviceName");
-    _addLog("Autenticação: ${widget.idInasx}");
+    _addLog("Monitor de Memoria: ATIVO");
     
     while (mounted) {
-      // 1. Sincronia de Ciclo EnX OS (180s)
-      int cycleSeed = DateTime.now().millisecondsSinceEpoch ~/ (180 * 1000);
+      int cycleSeed = DateTime.now().millisecondsSinceEpoch ~/ 1000 ~/ 180;
       _addLog("Iniciando Ciclo: $cycleSeed");
       
-      // 2. Geração da Prova EnX18 Real
-      _addLog("Participando...");
-      String actionHash = EnX18.generate(cycleSeed);
+      _addLog("Alocando buffers PoP...");
       
+      BigInt idBig = BigInt.parse(widget.idInasx);
+      BigInt seedBig = BigInt.from(cycleSeed);
+      
+      BigInt actionRaw = EnXLow.enx9(idBig ^ seedBig);
+      String actionHash = EnXBase.toStringPad(actionRaw, 12);
+      
+      // Simulação de carga na RAM durante a computação do Hash
       for (int i = 0; i < 6; i++) {
         await Future.delayed(const Duration(milliseconds: 400));
         if (mounted) {
           setState(() {
-            currentNonce = "0x" + actionHash.substring(0, 8).toUpperCase() + Random().nextInt(999).toString();
-            cpuUsage = 0.85 + (Random().nextDouble() * 0.1);
+            currentNonce = "0x" + actionHash.substring(0, 6).toUpperCase() + Random().nextInt(999).toString();
+            // RAM sobe para ~70-85% durante a validação
+            ramUsage = 0.72 + (Random().nextDouble() * 0.13);
           });
         }
       }
       
-      // 3. Comunicação via HTTPS com o Replit
-      _addLog("Quest...");
+      _addLog("Quest (Buffer -> Rede)...");
       String response = await _network.sendSubmitPop(widget.idInasx, actionHash, cycleSeed);
       
-      _addLog("Console: $response");
-      
-      if (response == "POP_OK") {
+      if (response.startsWith("POP_OK")) {
+        double reward = 0.0;
+        try {
+          List<String> parts = response.split('|');
+          if (parts.length > 1) reward = double.parse(parts[1]);
+        } catch (_) { reward = 0.03; }
+
         setState(() {
           blocksValidated++;
-          sessionInx += 0.0125; 
-          cpuUsage = 0.10; 
+          sessionInx += reward; 
+          ramUsage = 0.15; // Libera memória após sucesso
         });
-        _addLog("Participação validada com sucesso.");
-      } else if (response == "OFFLINE") {
-        _addLog("Erro: Servidor Central Offline.");
-      } else {
-        _addLog("Erro: Prova rejeitada ou Ciclo expirado.");
+        _addLog("Validado: +${reward.toStringAsFixed(3)} INX");
+      } 
+      else if (response == "ERR_LOW_BALANCE") {
+        setState(() => ramUsage = 0.05); // Idle mínimo
+        _addLog("CRITICO: Saldo < 100 INX");
+        break; 
+      }
+      else {
+        _addLog("Rejeitado: $response");
+        setState(() => ramUsage = 0.20);
       }
 
-      _addLog("Aguardando próximo Job...");
-      await Future.delayed(const Duration(seconds: 15)); 
+      _addLog("Sincronizando Ciclo...");
+      await Future.delayed(const Duration(seconds: 30)); 
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final String displayId = ModalRoute.of(context)?.settings.arguments as String? ?? widget.idInasx;
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -159,14 +166,14 @@ class _InasxStartedState extends State<InasxStarted> {
                 style: const TextStyle(color: Color(0xFF64FFDA), fontFamily: 'Courier', fontSize: 12, fontWeight: FontWeight.bold),
               ),
               Text(
-                "ID: $displayId | Bateria: $batteryLevel% | ${DateTime.now().toString().substring(11, 19)}",
+                "ID: ${widget.idInasx} | Bateria: $batteryLevel%",
                 style: const TextStyle(color: Colors.white70, fontFamily: 'Courier', fontSize: 10),
               ),
               const Divider(color: Color(0xFF1D2A4E)),
               
-              const Text("MONITOR DE RECURSOS:", style: TextStyle(color: Color(0xFF64FFDA), fontSize: 10, fontWeight: FontWeight.bold)),
-              _buildResourceBar("CPU", cpuUsage),
-              _buildResourceBar("BATT", batteryLevel / 100), 
+              const Text("PERFORMANCE:", style: TextStyle(color: Color(0xFF64FFDA), fontSize: 10, fontWeight: FontWeight.bold)),
+              _buildResourceBar("RAM ", ramUsage),
+              _buildResourceBar("BATTERY", batteryLevel / 100), 
               
               const SizedBox(height: 15),
               
@@ -178,16 +185,14 @@ class _InasxStartedState extends State<InasxStarted> {
                 ),
                 child: Column(
                   children: [
-                    _buildDataRow("GANHOS DA SESSÃO:", "${sessionInx.toStringAsFixed(4)} INX"),
+                    _buildDataRow("INX OBTIDOS:", "${sessionInx.toStringAsFixed(4)}"),
                     const SizedBox(height: 4),
-                    _buildDataRow("PARTICIPAÇÕES VALIDADOS:", "$blocksValidated"),
+                    _buildDataRow("PARTICIPAÇÕES:", "$blocksValidated"),
                   ],
                 ),
               ),
 
               const SizedBox(height: 15),
-              const Text("LOG:", style: TextStyle(color: Color(0xFF64FFDA), fontSize: 10, fontWeight: FontWeight.bold)),
-              
               Expanded(
                 child: Container(
                   width: double.infinity,
@@ -212,8 +217,8 @@ class _InasxStartedState extends State<InasxStarted> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
-                  "HASH: ${currentNonce.length > 18 ? currentNonce.substring(0, 18) : currentNonce}...", 
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontFamily: 'Courier')
+                  "RAM_HASH: ${currentNonce.length > 20 ? currentNonce.substring(0, 20) : currentNonce}", 
+                  style: const TextStyle(color: Colors.white38, fontSize: 10, fontFamily: 'Courier')
                 ),
               ),
             ],
