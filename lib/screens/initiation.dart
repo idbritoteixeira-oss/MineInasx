@@ -26,20 +26,19 @@ class _InasxInitiationState extends State<InasxInitiation> {
   Future<void> _startMiningProtocol() async {
     final String id = _idController.text.trim();
     
-    // ATUALIZAÇÃO: Configuração para o servidor hospedado no Replit
-    // Não utilizamos porta 8080 aqui pois o Replit gerencia o tráfego via HTTPS (443)
-    final network = InasxNetwork(
-      serverUrl: 'https://8b48ce67-8062-40e3-be2d-c28fd3ae4f01-00-117turwazmdmc.janeway.replit.dev'
-    );
+    // Instância de rede utilizando a URL base definida (O InasxNetwork já deve tratar o endpoint)
+    final network = InasxNetwork();
     
     setState(() {
       _isValidating = true;
       _statusText = "PESQUISANDO EM /URONS/$id.NAS...";
     });
 
-    // Chamada ao Servidor Central via protocolo HTTP/HTTPS
+    // Chamada ao Servidor Central para varredura de ID (CHECK_EXISTENCE)
+    // O InasxNetwork deve enviar o pacote: LOGIN|id|CHECK_EXISTENCE
     String response = await network.verificarExistenciaId(id);
 
+    // O servidor agora retorna LOGIN_OK|EXIST se o ID for encontrado
     if (response.startsWith("LOGIN_OK")) {
       setState(() => _statusText = "ID VALIDADO. BAIXANDO CONTÊINER ENX...");
       
@@ -50,6 +49,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
 
       if (!mounted) return;
 
+      // Navega para a tela de mineração passando o ID confirmado
       Navigator.pushNamed(context, '/started', arguments: id);
       
     } else {
@@ -58,9 +58,12 @@ class _InasxInitiationState extends State<InasxInitiation> {
         if (response == "OFFLINE") {
           _statusText = "ERRO: SERVIDOR CENTRAL FORA DE LINHA.";
           _showError("Falha na conexão com o servidor EnX.");
-        } else {
+        } else if (response == "ID_NOT_FOUND") {
           _statusText = "ERRO: ID NÃO LOCALIZADO NO MULTIVERSO.";
           _showError("Acesso Negado: Uron inexistente.");
+        } else {
+          _statusText = "ERRO: RESPOSTA INESPERADA.";
+          _showError("Falha na validação: $response");
         }
       });
     }
@@ -96,11 +99,13 @@ class _InasxInitiationState extends State<InasxInitiation> {
             child: Column(
               children: [
                 const SizedBox(height: 60),
+                // Logo central do ecossistema Inasx
                 Image.asset(
                   'assets/images/logo.png',
                   width: 120,
                   height: 120,
                   fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.Lan, size: 80, color: Color(0xFF64FFDA)),
                 ),
                 const SizedBox(height: 40),
                 
