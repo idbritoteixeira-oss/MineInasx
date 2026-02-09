@@ -1,36 +1,29 @@
-import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'dart:convert';
 
 class InasxNetwork {
-  final String serverIp;
-  final int port;
+  // Remova a barra final da URL para evitar erro de concatenação
+  final String serverUrl;
 
-  InasxNetwork({this.serverIp = '127.0.0.1', this.port = 8080});
+  InasxNetwork({
+    this.serverUrl = 'https://8b48ce67-8062-40e3-be2d-c28fd3ae4f01-00-117turwazmdmc.janeway.replit.dev',
+  });
 
   /// VALIDAÇÃO PARA initiation.dart
-  /// Envia o comando LOGIN para o servidor central verificar no /urons/
   Future<String> verificarExistenciaId(String id) async {
     try {
-      Socket socket = await Socket.connect(serverIp, port, timeout: const Duration(seconds: 5));
+      // O Replit/SInasxServer via HTTP geralmente recebe via POST ou Query Params
+      // Vou simular o envio do seu pacote LOGIN via Body
+      final response = await http.post(
+        Uri.parse('$serverUrl/login'),
+        body: {'packet': "LOGIN|$id|CHECK_EXISTENCE"},
+      ).timeout(const Duration(seconds: 10));
 
-      // O SInasxServer espera: LOGIN|id|e1
-      // Como na iniciação queremos apenas ver se existe, passamos um placeholder no e1
-      String packet = "LOGIN|$id|CHECK_EXISTENCE\n";
-
-      socket.write(packet);
-
-      Completer<String> completer = Completer();
-      socket.listen(
-        (List<int> data) {
-          String response = utf8.decode(data).trim();
-          completer.complete(response);
-        },
-        onError: (error) => completer.complete("ERR_NET"),
-        onDone: () => socket.destroy(),
-      );
-
-      return await completer.future.timeout(const Duration(seconds: 5));
+      if (response.statusCode == 200) {
+        return response.body.trim();
+      }
+      return "ERR_NET";
     } catch (e) {
       return "OFFLINE";
     }
@@ -39,21 +32,15 @@ class InasxNetwork {
   /// LÓGICA DE MINERAÇÃO (Para started.dart)
   Future<String> sendSubmitPop(String id, String actionHash, int seed) async {
     try {
-      Socket socket = await Socket.connect(serverIp, port, timeout: const Duration(seconds: 5));
-      String packet = "SUBMIT_POP|$id|$actionHash|$seed\n";
-      socket.write(packet);
+      final response = await http.post(
+        Uri.parse('$serverUrl/submit'),
+        body: {'packet': "SUBMIT_POP|$id|$actionHash|$seed"},
+      ).timeout(const Duration(seconds: 5));
 
-      Completer<String> completer = Completer();
-      socket.listen(
-        (List<int> data) {
-          String response = utf8.decode(data).trim();
-          completer.complete(response);
-        },
-        onError: (error) => completer.complete("ERR_NET"),
-        onDone: () => socket.destroy(),
-      );
-
-      return await completer.future.timeout(const Duration(seconds: 3));
+      if (response.statusCode == 200) {
+        return response.body.trim();
+      }
+      return "ERR_NET";
     } catch (e) {
       return "OFFLINE";
     }

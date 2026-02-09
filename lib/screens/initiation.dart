@@ -22,25 +22,27 @@ class _InasxInitiationState extends State<InasxInitiation> {
     super.dispose();
   }
 
-  // Lógica de Prova de Existência conectada ao SInasxServer
+  // Lógica de Prova de Existência conectada ao SInasxServer no Replit
   Future<void> _startMiningProtocol() async {
     final String id = _idController.text.trim();
     
-    // Configuração do acesso ao servidor EnX
-    final network = InasxNetwork(serverIp: '127.0.0.1', port: 8080);
+    // ATUALIZAÇÃO: Configuração para o servidor hospedado no Replit
+    // Não utilizamos porta 8080 aqui pois o Replit gerencia o tráfego via HTTPS (443)
+    final network = InasxNetwork(
+      serverUrl: 'https://8b48ce67-8062-40e3-be2d-c28fd3ae4f01-00-117turwazmdmc.janeway.replit.dev'
+    );
     
     setState(() {
       _isValidating = true;
       _statusText = "PESQUISANDO EM /URONS/$id.NAS...";
     });
 
-    // Chamada real ao Servidor Central (Comando LOGIN para validar existência)
+    // Chamada ao Servidor Central via protocolo HTTP/HTTPS
     String response = await network.verificarExistenciaId(id);
 
     if (response.startsWith("LOGIN_OK")) {
       setState(() => _statusText = "ID VALIDADO. BAIXANDO CONTÊINER ENX...");
       
-      // Simulação de sincronização dos componentes EnX1_9 e Base
       await Future.delayed(const Duration(seconds: 1));
       
       setState(() => _statusText = "CONTÊINER ENX SINCRONIZADOS.");
@@ -48,7 +50,6 @@ class _InasxInitiationState extends State<InasxInitiation> {
 
       if (!mounted) return;
 
-      // ATUALIZAÇÃO DA ROTA: Usando a rota nomeada definida no main.dart
       Navigator.pushNamed(context, '/started', arguments: id);
       
     } else {
@@ -90,7 +91,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView( // Adicionado para evitar overflow em telas menores
+          child: SingleChildScrollView( 
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Column(
               children: [
@@ -161,7 +162,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
                   ),
                 ),
 
-                const SizedBox(height: 100), // Substituiu Spacer para funcionar com o SingleChildScrollView
+                const SizedBox(height: 100), 
                 
                 Text(
                   _statusText,

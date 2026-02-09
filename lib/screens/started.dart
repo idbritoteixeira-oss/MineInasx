@@ -23,8 +23,10 @@ class _InasxStartedState extends State<InasxStarted> {
   final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
   final Battery _battery = Battery();
   
-  // Instância de Rede conectada ao SInasxServer (Ajuste o IP se necessário)
-  final InasxNetwork _network = InasxNetwork(serverIp: '127.0.0.1', port: 8080);
+  // ATUALIZAÇÃO: Instância conectada ao servidor no Replit via HTTPS
+  final InasxNetwork _network = InasxNetwork(
+    serverUrl: 'https://8b48ce67-8062-40e3-be2d-c28fd3ae4f01-00-117turwazmdmc.janeway.replit.dev'
+  );
   
   double cpuUsage = 0.15; 
   int batteryLevel = 100;
@@ -79,7 +81,6 @@ class _InasxStartedState extends State<InasxStarted> {
         logs.add("> $text");
         if (logs.length > 30) logs.removeAt(0);
       });
-      // Scroll automático para o final do log
       Timer(const Duration(milliseconds: 100), () {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
@@ -102,11 +103,10 @@ class _InasxStartedState extends State<InasxStarted> {
       int cycleSeed = DateTime.now().millisecondsSinceEpoch ~/ (180 * 1000);
       _addLog("Iniciando Ciclo: $cycleSeed");
       
-      // 2. Geração da Prova EnX18 Real (Liberado pelo Initiation)
-      _addLog("Gerando ActionHash via EnX1_9...");
+      // 2. Geração da Prova EnX18 Real
+      _addLog("Participando...");
       String actionHash = EnX18.generate(cycleSeed);
       
-      // Simulação de esforço computacional visual
       for (int i = 0; i < 6; i++) {
         await Future.delayed(const Duration(milliseconds: 400));
         if (mounted) {
@@ -117,11 +117,11 @@ class _InasxStartedState extends State<InasxStarted> {
         }
       }
       
-      // 3. Comunicação TCP Real com o SInasxServer
-      _addLog("Transmitindo SUBMIT_POP...");
+      // 3. Comunicação via HTTPS com o Replit
+      _addLog("Quest...");
       String response = await _network.sendSubmitPop(widget.idInasx, actionHash, cycleSeed);
       
-      _addLog("Servidor: $response");
+      _addLog("Console: $response");
       
       if (response == "POP_OK") {
         setState(() {
@@ -129,7 +129,7 @@ class _InasxStartedState extends State<InasxStarted> {
           sessionInx += 0.0125; 
           cpuUsage = 0.10; 
         });
-        _addLog("Bloco validado com sucesso.");
+        _addLog("Participação validada com sucesso.");
       } else if (response == "OFFLINE") {
         _addLog("Erro: Servidor Central Offline.");
       } else {
@@ -143,7 +143,6 @@ class _InasxStartedState extends State<InasxStarted> {
 
   @override
   Widget build(BuildContext context) {
-    // Captura o ID vindo da Rota se não houver no construtor
     final String displayId = ModalRoute.of(context)?.settings.arguments as String? ?? widget.idInasx;
 
     return Scaffold(
@@ -181,13 +180,13 @@ class _InasxStartedState extends State<InasxStarted> {
                   children: [
                     _buildDataRow("GANHOS DA SESSÃO:", "${sessionInx.toStringAsFixed(4)} INX"),
                     const SizedBox(height: 4),
-                    _buildDataRow("BLOCOS VALIDADOS:", "$blocksValidated"),
+                    _buildDataRow("PARTICIPAÇÕES VALIDADOS:", "$blocksValidated"),
                   ],
                 ),
               ),
 
               const SizedBox(height: 15),
-              const Text("LOG DE OPERAÇÕES:", style: TextStyle(color: Color(0xFF64FFDA), fontSize: 10, fontWeight: FontWeight.bold)),
+              const Text("LOG:", style: TextStyle(color: Color(0xFF64FFDA), fontSize: 10, fontWeight: FontWeight.bold)),
               
               Expanded(
                 child: Container(
@@ -213,7 +212,7 @@ class _InasxStartedState extends State<InasxStarted> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
-                  "HASH ATUAL: ${currentNonce.length > 18 ? currentNonce.substring(0, 18) : currentNonce}...", 
+                  "HASH: ${currentNonce.length > 18 ? currentNonce.substring(0, 18) : currentNonce}...", 
                   style: const TextStyle(color: Colors.white, fontSize: 11, fontFamily: 'Courier')
                 ),
               ),
@@ -224,7 +223,6 @@ class _InasxStartedState extends State<InasxStarted> {
     );
   }
 
-  // Widgets Auxiliares permanecem os mesmos para manter a estética EnX
   Widget _buildDataRow(String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
