@@ -5,18 +5,19 @@ import 'dart:ui';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-// Importando as telas conforme a nova hierarquia de pastas
+// Importando as telas
 import 'screens/splashscreen.dart';
 import 'screens/initiation.dart';
 import 'screens/started.dart';
 
+// Instância global para evitar erros de inicialização no background
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Inicializa o motor de segundo plano do EnX OS
   await initializeService();
   
-  // Configuração de orientação e estilo de sistema
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -28,18 +29,15 @@ Future<void> main() async {
   runApp(const MineInasxApp());
 }
 
-// Configuração do Background Service para o Miner Inasx
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
 
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
     'enx_mining_channel', 
-    'ENX MINING SERVICE',
-    description: 'Este canal mantém a mineração PoP ativa.',
+    'INASX MINER SERVICE',
+    description: 'WORKING',
     importance: Importance.low, 
   );
-
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
@@ -51,9 +49,10 @@ Future<void> initializeService() async {
       autoStart: true,
       isForegroundMode: true,
       notificationChannelId: 'enx_mining_channel',
-      initialNotificationTitle: 'ENX OS WORKER',
-      initialNotificationContent: 'Sincronizando com a rede...',
+      initialNotificationTitle: 'MINER INASX',
+      initialNotificationContent: 'Aguardando inicialização...',
       foregroundServiceNotificationId: 888,
+      // Removido o parâmetro defaultNotificationIcon que causava erro no seu print
     ),
     iosConfiguration: IosConfiguration(
       autoStart: true,
@@ -67,18 +66,40 @@ Future<void> initializeService() async {
 void onStart(ServiceInstance service) async {
   DartPluginRegistrant.ensureInitialized();
   
+  // Variáveis de estado da sessão
+  String currentSeed = "0";
+  String sessionBalance = "0.0000";
+
   service.on('stopService').listen((event) {
     service.stopSelf();
   });
 
-  // Loop de atualização da notificação - Corrigido para a nova API
-  Timer.periodic(const Duration(seconds: 10), (timer) async {
+  // Listener para capturar os dados vindos da interface
+  service.on('updateData').listen((event) {
+    if (event != null) {
+      currentSeed = event['seed'] ?? "0";
+      sessionBalance = event['balance'] ?? "0.0000";
+    }
+  });
+
+  // Loop de atualização da notificação via Local Notifications (Garante o ícone e os dados)
+  Timer.periodic(const Duration(seconds: 90), (timer) async {
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
-        // Correção aplicada aqui para eliminar o erro do "isn't defined"
-        service.setForegroundNotificationInfo(
-          title: "ENX OS - MINER ATIVO",
-          content: "Ciclo PoP em execução...",
+        flutterLocalNotificationsPlugin.show(
+          888,
+          'EARNINGS: $sessionBalance INX',
+          'SEED: $currentSeed',
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'enx_mining_channel',
+              'ENX MINING SERVICE',
+              icon: 'front_loader', // Usa o tratorzinho front_loader.png
+              ongoing: true,
+              importance: Importance.low,
+              priority: Priority.low,
+            ),
+          ),
         );
       }
     }
@@ -96,8 +117,6 @@ class MineInasxApp extends StatelessWidget {
     return MaterialApp(
       title: 'Mine Inasx',
       debugShowCheckedModeBanner: false,
-      
-      // Tema Centralizado Oceanic Core do EnX OS
       theme: ThemeData(
         brightness: Brightness.dark,
         primaryColor: const Color(0xFF64FFDA),
@@ -108,14 +127,11 @@ class MineInasxApp extends StatelessWidget {
         ),
         dividerColor: const Color(0xFF1D2A4E),
       ),
-
-      // Sistema de Rotas Nomeadas
       initialRoute: '/',
       routes: {
         '/': (context) => const EnXSplashScreen(),
         '/initiation': (context) => const InasxInitiation(),
       },
-      
       onGenerateRoute: (settings) {
         if (settings.name == '/started') {
           final args = settings.arguments as String? ?? "ID_PENDING";
@@ -125,10 +141,6 @@ class MineInasxApp extends StatelessWidget {
         }
         return null;
       },
-      
-      onUnknownRoute: (settings) => MaterialPageRoute(
-        builder: (context) => const EnXSplashScreen(),
-      ),
     );
   }
 }

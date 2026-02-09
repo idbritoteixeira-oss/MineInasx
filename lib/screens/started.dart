@@ -3,6 +3,8 @@ import 'dart:async';
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:battery_plus/battery_plus.dart';
+// NOVO IMPORT PARA COMUNICAÇÃO COM O BACKGROUND
+import 'package:flutter_background_service/flutter_background_service.dart';
 
 // NOVOS IMPORTS DE SEGURANÇA
 import '../../core/security/enx_security.dart';
@@ -54,11 +56,10 @@ class _InasxStartedState extends State<InasxStarted> {
     super.dispose();
   }
 
-  // Monitor de RAM via Kernel (Conserta o erro de leitura no Android)
+  // Monitor de RAM via Kernel
   Future<void> _updateRamUsage() async {
     try {
       if (Platform.isAndroid) {
-        // Lê diretamente do sistema de arquivos do Kernel
         final result = await Process.run('cat', ['/proc/meminfo']);
         final lines = result.stdout.toString().split('\n');
         
@@ -86,7 +87,6 @@ class _InasxStartedState extends State<InasxStarted> {
   }
 
   void _initSystem() async {
-    // 1. Hardware Info
     try {
       if (Platform.isAndroid) {
         AndroidDeviceInfo info = await deviceInfo.androidInfo;
@@ -96,18 +96,14 @@ class _InasxStartedState extends State<InasxStarted> {
       }
     } catch (_) { deviceName = "Unknown Worker"; }
 
-    // 2. RAM Monitor (Polling de 4s)
-    _ramTimer = Timer.periodic(const Duration(seconds: 4), (_) => _updateRamUsage());
+    _ramTimer = Timer.periodic(const Duration(seconds: 1), (_) => _updateRamUsage());
 
-    // 3. Battery Monitor
     _batterySubscription = _battery.onBatteryStateChanged.listen((_) async {
       int level = await _battery.batteryLevel;
       if (mounted) setState(() => batteryLevel = level);
     });
 
     if (mounted) setState(() {});
-    
-    // Inicia o Loop de Mineração
     _workerLoop();
   }
 
@@ -127,15 +123,15 @@ class _InasxStartedState extends State<InasxStarted> {
   void _workerLoop() async {
     await Future.delayed(const Duration(seconds: 1)); 
     
-    _addLog("--- [EnX OS PoP Worker] ---");
-    _addLog("[INFO] ID: ${widget.idInasx}");
-    _addLog("[STATUS] Sincronizando com ciclo de rede...");
+    _addLog("--- [INASX MINER PoS/P Worker] ---");
+    _addLog("[INX WALLET] ID: ${widget.idInasx}");
+    _addLog("[STATUS] Synchronizing with network seed");
 
     while (mounted) {
       int timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       int cycleSeed = timestamp ~/ 180;
 
-      _addLog("Iniciando Ciclo: $cycleSeed");
+      _addLog("[HARDWARE] Starting ticket registration: $cycleSeed");
 
       BigInt idVal = BigInt.parse(widget.idInasx).toUnsigned(64);
       BigInt seedVal = BigInt.from(cycleSeed).toUnsigned(64);
@@ -146,7 +142,13 @@ class _InasxStartedState extends State<InasxStarted> {
 
       setState(() => currentNonce = actionHash);
 
-      _addLog("Quest: $actionHash");
+      // PONTE PARA A NOTIFICAÇÃO: Envia Seed e Saldo para o Background
+      FlutterBackgroundService().invoke('updateData', {
+        "seed": actionHash,
+        "balance": sessionInx.toStringAsFixed(4),
+      });
+
+      _addLog("[HARDWARE] Your ticket: $actionHash");
       
       String response = await _network.sendSubmitPop(widget.idInasx, actionHash, cycleSeed);
 
@@ -161,13 +163,20 @@ class _InasxStartedState extends State<InasxStarted> {
           blocksValidated++;
           sessionInx += reward;
         });
-        _addLog("[SISTEMA] Recompensado: +$reward INX");
+
+        // Atualiza novamente após receber a recompensa
+        FlutterBackgroundService().invoke('updateData', {
+          "seed": actionHash,
+          "balance": sessionInx.toStringAsFixed(4),
+        });
+
+        _addLog("[SYSTEM] Rewarded: +$reward INX");
       } else {
-        _addLog("Resposta: $response");
+        _addLog("Response: $response");
       }
 
       int secondsRemaining = 180 - (timestamp % 180);
-      _addLog("Aguardando próximo ciclo (${secondsRemaining}s)...");
+      _addLog("[HARDWARE] Waiting for new ticket (${secondsRemaining}s)...");
       
       await Future.delayed(Duration(seconds: secondsRemaining + 2));
     }
@@ -200,9 +209,9 @@ class _InasxStartedState extends State<InasxStarted> {
                 ),
                 child: Column(
                   children: [
-                    _row("INX OBTIDOS:", sessionInx.toStringAsFixed(4)),
+                    _row("INX EARNINGS:", sessionInx.toStringAsFixed(4)),
                     const SizedBox(height: 5),
-                    _row("PARTICIPAÇÕES:", blocksValidated.toString()),
+                    _row("PARTICIPATIONS:", blocksValidated.toString()),
                   ],
                 ),
               ),
