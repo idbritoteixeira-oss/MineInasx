@@ -105,7 +105,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
                   width: 120,
                   height: 120,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.Lan, size: 80, color: Color(0xFF64FFDA)),
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.lan, size: 80, color: Color(0xFF64FFDA)),
                 ),
                 const SizedBox(height: 40),
                 
