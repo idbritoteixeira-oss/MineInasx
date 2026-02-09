@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 // Importando as telas conforme a nova hierarquia de pastas
-import 'screens/splash_screen.dart';
+import 'screens/splashscreen.dart';
 import 'screens/initiation.dart';
 import 'screens/started.dart';
 
