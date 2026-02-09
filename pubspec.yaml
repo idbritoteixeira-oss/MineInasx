@@ -16,6 +16,7 @@ dependencies:
   http: ^1.6.0
   intl: ^0.20.2
   url_launcher: ^6.3.1
+  shared_preferences: ^2.2.2
   device_info_plus: ^10.1.0
   battery_plus: ^6.1.0
 

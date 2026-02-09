@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Importações ajustadas para a nova estrutura de pastas
 import '../core/network/inasx_network.dart';
@@ -14,7 +15,14 @@ class InasxInitiation extends StatefulWidget {
 class _InasxInitiationState extends State<InasxInitiation> {
   final TextEditingController _idController = TextEditingController();
   bool _isValidating = false;
+  bool _rememberId = true; // Estado do Checkbox
   String _statusText = "AGUARDANDO CONEXÃO COM A REDE...";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedId(); // Carrega o ID ao iniciar
+  }
 
   @override
   void dispose() {
@@ -22,11 +30,29 @@ class _InasxInitiationState extends State<InasxInitiation> {
     super.dispose();
   }
 
-  // Lógica de Prova de Existência conectada ao SInasxServer no Replit
+  // Carrega o ID salvo no armazenamento local
+  Future<void> _loadSavedId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedId = prefs.getString('saved_id_inasx');
+    if (savedId != null && savedId.isNotEmpty) {
+      setState(() {
+        _idController.text = savedId;
+      });
+    }
+  }
+
+  // Salva ou remove o ID do armazenamento local
+  Future<void> _handleSaveId(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_rememberId) {
+      await prefs.setString('saved_id_inasx', id);
+    } else {
+      await prefs.remove('saved_id_inasx');
+    }
+  }
+
   Future<void> _startMiningProtocol() async {
     final String id = _idController.text.trim();
-    
-    // Instância de rede utilizando a URL base definida (O InasxNetwork já deve tratar o endpoint)
     final network = InasxNetwork();
     
     setState(() {
@@ -34,14 +60,13 @@ class _InasxInitiationState extends State<InasxInitiation> {
       _statusText = "PESQUISANDO EM /URONS/$id.NAS...";
     });
 
-    // Chamada ao Servidor Central para varredura de ID (CHECK_EXISTENCE)
-    // O InasxNetwork deve enviar o pacote: LOGIN|id|CHECK_EXISTENCE
     String response = await network.verificarExistenciaId(id);
 
-    // O servidor agora retorna LOGIN_OK|EXIST se o ID for encontrado
     if (response.startsWith("LOGIN_OK")) {
+      // Salva o ID antes de navegar se a opção estiver marcada
+      await _handleSaveId(id);
+
       setState(() => _statusText = "ID VALIDADO. BAIXANDO CONTÊINER ENX...");
-      
       await Future.delayed(const Duration(seconds: 1));
       
       setState(() => _statusText = "CONTÊINER ENX SINCRONIZADOS.");
@@ -49,7 +74,6 @@ class _InasxInitiationState extends State<InasxInitiation> {
 
       if (!mounted) return;
 
-      // Navega para a tela de mineração passando o ID confirmado
       Navigator.pushNamed(context, '/started', arguments: id);
       
     } else {
@@ -99,7 +123,6 @@ class _InasxInitiationState extends State<InasxInitiation> {
             child: Column(
               children: [
                 const SizedBox(height: 60),
-                // Logo central do ecossistema Inasx
                 Image.asset(
                   'assets/images/logo.png',
                   width: 120,
@@ -139,7 +162,30 @@ class _InasxInitiationState extends State<InasxInitiation> {
                   ),
                 ),
                 
-                const SizedBox(height: 20),
+                // CAMPO "LEMBRAR ID"
+                Row(
+                  children: [
+                    Theme(
+                      data: ThemeData(unselectedWidgetColor: const Color(0xFF1D2A4E)),
+                      child: Checkbox(
+                        value: _rememberId,
+                        activeColor: const Color(0xFF64FFDA),
+                        checkColor: Colors.black,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            _rememberId = value ?? false;
+                          });
+                        },
+                      ),
+                    ),
+                    const Text(
+                      "LEMBRAR ID NO DISPOSITIVO",
+                      style: TextStyle(color: Colors.white38, fontSize: 9, fontFamily: 'Courier'),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
 
                 SizedBox(
                   width: double.infinity,
@@ -167,7 +213,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
                   ),
                 ),
 
-                const SizedBox(height: 100), 
+                const SizedBox(height: 80), 
                 
                 Text(
                   _statusText,

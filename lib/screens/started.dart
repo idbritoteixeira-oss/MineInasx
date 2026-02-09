@@ -93,22 +93,22 @@ class _InasxStartedState extends State<InasxStarted> {
     _addLog("[STATUS] Iniciando participação...");
     
     while (mounted) {
-      // 1. Sincroniza com o ciclo (time / 180) - Paridade absoluta com C++
+      // 1. Sincroniza com o ciclo de 180s - Paridade absoluta com C++
       int cycleSeed = DateTime.now().millisecondsSinceEpoch ~/ 1000 ~/ 180;
       
       _addLog("Iniciando Ciclo: $cycleSeed");
       
-      // 2. Gera a Prova (Action Hash) usando EnX9
+      // 2. Gera a Prova (Action Hash) usando as classes corrigidas
       BigInt idBig = BigInt.parse(widget.idInasx);
       BigInt seedBig = BigInt.from(cycleSeed);
       
-      // XOR e Hash idêntico ao script
-      BigInt actionRaw = EnXLow.enx9(idBig ^ seedBig);
-      String actionHash = EnXBase.toStringPad(actionRaw, 12);
+      // Nomes atualizados: EnX_Low.EnX9 e EnXBase.to_string_pad
+      BigInt actionRaw = EnX_Low.EnX9(idBig ^ seedBig);
+      String actionHash = EnXBase.to_string_pad(actionRaw, 12);
       
       setState(() {
         currentNonce = "0x${actionHash.toUpperCase()}";
-        ramUsage = 0.65 + (Random().nextDouble() * 0.1); // Simula carga
+        ramUsage = 0.65 + (Random().nextDouble() * 0.1); 
       });
 
       // 3. Envio e Espera de Resposta
@@ -134,7 +134,7 @@ class _InasxStartedState extends State<InasxStarted> {
         setState(() => ramUsage = 0.15);
       }
 
-      // 4. Sincronizado com o ciclo: sleep(180)
+      // 4. Sincronizado com o ciclo: sleep(180) como no scriptworker.cpp
       _addLog("Aguardando proximo ciclo (180s)...");
       await Future.delayed(const Duration(seconds: 180)); 
     }
