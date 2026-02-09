@@ -37,7 +37,7 @@ class _InasxStartedState extends State<InasxStarted> {
   // Estado da Mineração
   double ramUsage = 0.0;
   int batteryLevel = 100;
-  String currentNonce = "0"; // Hash limpo, sem 0x
+  String currentNonce = "0"; 
   double sessionInx = 0.0000;
   int blocksValidated = 0;
   String deviceName = "Detectando...";
@@ -75,7 +75,7 @@ class _InasxStartedState extends State<InasxStarted> {
           int free = SysInfo.getFreePhysicalMemory();
           setState(() => ramUsage = (total - free) / total);
         } catch (_) { 
-          setState(() => ramUsage = 0.12); // Fallback seguro
+          setState(() => ramUsage = 0.12); 
         }
       }
     });
@@ -98,7 +98,6 @@ class _InasxStartedState extends State<InasxStarted> {
       logs.add("> $text");
       if (logs.length > 40) logs.removeAt(0);
     });
-    // Auto-scroll suave
     Timer(const Duration(milliseconds: 50), () {
       if (_scrollController.hasClients) {
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
@@ -106,48 +105,43 @@ class _InasxStartedState extends State<InasxStarted> {
     });
   }
 
-  // --- LÓGICA ESPELHADA DO WORKER.CPP ---
+  // --- LÓGICA ESPELHADA DO WORKER.CPP ATUALIZADA ---
   void _workerLoop() async {
-    await Future.delayed(const Duration(seconds: 1)); // Boot delay
+    await Future.delayed(const Duration(seconds: 1)); 
     
     _addLog("--- [EnX OS PoP Worker] ---");
     _addLog("[INFO] ID: ${widget.idInasx}");
-    _addLog("[STATUS] Iniciando participação...");
+    _addLog("[STATUS] Sincronizando com ciclo de rede...");
 
     while (mounted) {
-      // 1. Sincroniza com ciclo de 180s (uint64_t cycle_seed = time / 180)
+      // 1. Sincronização Estrita de Ciclo
       int timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       int cycleSeed = timestamp ~/ 180;
 
       _addLog("Iniciando Ciclo: $cycleSeed");
 
-      // 2. Gera a Prova (Action Hash)
-      // std::stoull(my_id) ^ cycle_seed
-      
-      // PARIDADE C++: Converter string ID para BigInt Unsigned 64-bit
+      // 2. Geração da Prova (Paridade uint64_t)
+      // Forçamos o toUnsigned(64) para garantir que o ID não seja tratado como assinado
       BigInt idVal = BigInt.parse(widget.idInasx).toUnsigned(64);
       BigInt seedVal = BigInt.from(cycleSeed).toUnsigned(64);
 
-      // XOR Operation (uint64_t ^ uint64_t)
+      // XOR idêntico ao C++: h.id_private = std::hash{}(seed + key)
       BigInt argument = (idVal ^ seedVal).toUnsigned(64);
 
-      // uint64_t action_raw = EnX_Low::EnX9(...)
+      // Cálculo EnX9 (Filtro de 12 dígitos)
       BigInt actionRaw = EnX_Low.EnX9(argument);
 
-      // std::string action_hash = EnXBase::to_string_pad(...)
+      // Formatação to_string_pad (Garante paridade com std::reverse do C++)
       String actionHash = EnXBase.to_string_pad(actionRaw, 12);
 
-      // Atualiza UI sem adicionar "0x" (Worker C++ não usa 0x na visualização padrão)
       setState(() => currentNonce = actionHash);
 
-      // 3. Envio (Socket simulation via HTTP)
+      // 3. Envio via Raw Text (InasxNetwork atualizado para evitar %7C)
       _addLog("Quest: $actionHash");
       
-      // Envia exatamente o que o C++ envia: ID, HASH, SEED
       String response = await _network.sendSubmitPop(widget.idInasx, actionHash, cycleSeed);
 
       if (response.contains("POP_OK")) {
-        // Extrai recompensa se disponível no formato POP_OK|0.09
         double reward = 0.09;
         try {
            var parts = response.split('|');
@@ -158,21 +152,23 @@ class _InasxStartedState extends State<InasxStarted> {
           blocksValidated++;
           sessionInx += reward;
         });
-        _addLog("[SISTEMA] Recompensado");
+        _addLog("[SISTEMA] Recompensado: +$reward INX");
       } else {
         _addLog("Resposta: $response");
       }
 
-      // 4. Sleep(180) - Aguarda o próximo ciclo
-      // O Worker C++ dorme 180s fixos após a tentativa.
-      _addLog("Aguardando proximo ciclo (180s)...");
-      await Future.delayed(const Duration(seconds: 180));
+      // 4. Inteligência de Espera (Prevenção de dessincronia)
+      // Calcula quantos segundos faltam para acabar o ciclo atual de 180s
+      int secondsRemaining = 180 - (timestamp % 180);
+      _addLog("Aguardando próximo ciclo (${secondsRemaining}s)...");
+      
+      // Dorme o tempo restante + 2s de margem de segurança para o servidor virar
+      await Future.delayed(Duration(seconds: secondsRemaining + 2));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Mantendo o layout Dark/Hacker original
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -181,7 +177,6 @@ class _InasxStartedState extends State<InasxStarted> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Hardware
               Text("[ $deviceName ]", style: const TextStyle(color: Color(0xFF64FFDA), fontFamily: 'Courier', fontWeight: FontWeight.bold)),
               const Divider(color: Colors.white24),
               
@@ -191,7 +186,6 @@ class _InasxStartedState extends State<InasxStarted> {
 
               const SizedBox(height: 20),
               
-              // Stats Box
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -209,7 +203,6 @@ class _InasxStartedState extends State<InasxStarted> {
 
               const SizedBox(height: 20),
 
-              // Console Logs
               Expanded(
                 child: Container(
                   width: double.infinity,
@@ -226,7 +219,6 @@ class _InasxStartedState extends State<InasxStarted> {
                 ),
               ),
 
-              // Footer Hash
               const SizedBox(height: 10),
               Text(
                 "ID_ACTIVE: ${widget.idInasx} | HASH: $currentNonce",
