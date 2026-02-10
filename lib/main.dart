@@ -46,7 +46,7 @@ Future<void> initializeService() async {
     androidConfiguration: AndroidConfiguration(
       onStart: onStart,
       autoStart: false,
-      isForegroundMode: true,
+      isForegroundMode: false,
       notificationChannelId: 'enx_mining_channel',
       initialNotificationTitle: 'Miner Inasx',
       initialNotificationContent: 'Initiation...',
