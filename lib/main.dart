@@ -9,6 +9,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'screens/splashscreen.dart';
 import 'screens/initiation.dart';
 import 'screens/started.dart';
+import 'screens/doc_create.dart'; // IMPORTAÇÃO ADICIONADA
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,9 +65,6 @@ Future<void> initializeService() async {
 void onStart(ServiceInstance service) async {
   DartPluginRegistrant.ensureInitialized();
   
-  // O onStart agora é apenas um container vazio para manter o serviço rodando.
-  // Toda a lógica de notificação foi movida para o started.dart
-  
   service.on('stopService').listen((event) {
     service.stopSelf();
   });
@@ -97,6 +95,7 @@ class MineInasxApp extends StatelessWidget {
       routes: {
         '/': (context) => const EnXSplashScreen(),
         '/initiation': (context) => const InasxInitiation(),
+        '/doc_create': (context) => const EnXDocCreatePage(), // ROTA DECLARADA
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/started') {

@@ -110,10 +110,11 @@ class _EnXSplashScreenState extends State<EnXSplashScreen> {
                                   const Color(0xFF1D2A4E).withOpacity(0.8),
                                 ),
                                 const SizedBox(height: 15),
+                                // ROTA ATUALIZADA: Direcionando para a Documentação Dwellers
                                 _buildMenuButton(
                                   context,
                                   "CREATE INASX",       
-                                  'com.inasx.app',    
+                                  '/doc_create',    
                                   Colors.transparent,
                                   showBorder: true,
                                 ),
@@ -123,7 +124,7 @@ class _EnXSplashScreenState extends State<EnXSplashScreen> {
                                   style: TextStyle(
                                     color: const Color(0xFF64FFDA).withOpacity(0.2),
                                     fontSize: 7,
-                                    fontFamily: 'monospace', // Atualizado
+                                    fontFamily: 'monospace',
                                     letterSpacing: 4,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -148,11 +149,8 @@ class _EnXSplashScreenState extends State<EnXSplashScreen> {
       height: 52,
       child: ElevatedButton(
         onPressed: () {
-          if (route == 'com.inasx.app') {
-             debugPrint("Redirecting to external record...");
-          } else {
-            Navigator.pushNamed(context, route);
-          }
+          // Navegação padrão para rotas internas
+          Navigator.pushNamed(context, route);
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: bgColor,
@@ -167,7 +165,7 @@ class _EnXSplashScreenState extends State<EnXSplashScreen> {
           label,
           style: const TextStyle(
             fontSize: 11,
-            fontFamily: 'monospace', // Atualizado
+            fontFamily: 'monospace',
             fontWeight: FontWeight.w600,
             letterSpacing: 1.5,
           ),
