@@ -70,7 +70,7 @@ class _InasxStartedState extends State<InasxStarted> {
           'enx_mining_channel',
           'INASX MINER SERVICE',
           icon: 'front_loader', // Ícone oficial do tratorzinho
-          ongoing: true,
+          ongoing: false,
           importance: Importance.low,
           priority: Priority.low,
           showWhen: false,
