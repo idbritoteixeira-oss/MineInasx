@@ -4,10 +4,9 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-// IMPORT NECESSÁRIO PARA AS NOTIFICAÇÕES LOCAIS
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-// NOVOS IMPORTS DE SEGURANÇA
+// IMPORTS DE SEGURANÇA E REDE EnX OS
 import '../../core/security/enx_security.dart';
 import '../../core/network/inasx_network.dart';
 
@@ -60,7 +59,7 @@ class _InasxStartedState extends State<InasxStarted> {
     super.dispose();
   }
 
-  // Função para atualizar a notificação com o ícone front_loader
+  // LÓGICA DE NOTIFICAÇÃO CENTRALIZADA
   void _updateNotification(String seed, String balance) {
     _notificationsPlugin.show(
       888,
@@ -70,7 +69,7 @@ class _InasxStartedState extends State<InasxStarted> {
         android: AndroidNotificationDetails(
           'enx_mining_channel',
           'INASX MINER SERVICE',
-          icon: 'front_loader',
+          icon: 'front_loader', // Ícone oficial do tratorzinho
           ongoing: true,
           importance: Importance.low,
           priority: Priority.low,
@@ -145,6 +144,9 @@ class _InasxStartedState extends State<InasxStarted> {
   }
 
   void _workerLoop() async {
+    // LIGA O SERVIÇO MANUALMENTE PARA EVITAR A FOLHA NO INÍCIO DO APP
+    FlutterBackgroundService().startService(); 
+    
     await Future.delayed(const Duration(seconds: 1)); 
     
     _addLog("--- [INASX MINER PoS/P Worker] ---");
@@ -166,7 +168,7 @@ class _InasxStartedState extends State<InasxStarted> {
 
       setState(() => currentNonce = actionHash);
 
-      // DISPARO DA NOTIFICAÇÃO (Lógica que estava no Main agora está aqui)
+      // DISPARO IMEDIATO DA NOTIFICAÇÃO COM DADOS REAIS
       _updateNotification(actionHash, sessionInx.toStringAsFixed(4));
 
       _addLog("[HARDWARE] Your ticket: $actionHash");
@@ -185,7 +187,7 @@ class _InasxStartedState extends State<InasxStarted> {
           sessionInx += reward;
         });
 
-        // Atualiza a notificação após receber recompensa
+        // ATUALIZAÇÃO PÓS-RECOMPENSA
         _updateNotification(actionHash, sessionInx.toStringAsFixed(4));
 
         _addLog("[SYSTEM] Rewarded: +$reward INX");
@@ -200,6 +202,7 @@ class _InasxStartedState extends State<InasxStarted> {
     }
   }
 
+  // --- INTERFACE GRÁFICA INTACTA ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
