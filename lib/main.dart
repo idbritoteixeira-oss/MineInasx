@@ -10,9 +10,6 @@ import 'screens/splashscreen.dart';
 import 'screens/initiation.dart';
 import 'screens/started.dart';
 
-// Instância global para evitar erros de inicialização no background
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -32,12 +29,14 @@ Future<void> main() async {
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
 
+  // Canal necessário para o Android reconhecer o serviço
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
     'enx_mining_channel', 
     'INASX MINER SERVICE',
-    description: 'WORKING',
     importance: Importance.low, 
   );
+
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
@@ -49,8 +48,8 @@ Future<void> initializeService() async {
       autoStart: true,
       isForegroundMode: true,
       notificationChannelId: 'enx_mining_channel',
-      initialNotificationTitle: 'MINER INASX',
-      initialNotificationContent: 'Waiting...',
+      initialNotificationTitle: 'ENX OS',
+      initialNotificationContent: 'Iniciando sistema...',
       foregroundServiceNotificationId: 888,
     ),
     iosConfiguration: IosConfiguration(
@@ -65,47 +64,11 @@ Future<void> initializeService() async {
 void onStart(ServiceInstance service) async {
   DartPluginRegistrant.ensureInitialized();
   
-  // Variáveis de estado da sessão
-  String currentSeed = "0";
-  String sessionBalance = "0.0000";
-  bool isMiningActive = false; // NOVA TRAVA: Começa desativado
-
+  // O onStart agora é apenas um container vazio para manter o serviço rodando.
+  // Toda a lógica de notificação foi movida para o started.dart
+  
   service.on('stopService').listen((event) {
     service.stopSelf();
-  });
-
-  // Listener para capturar os dados vindos da interface
-  service.on('updateData').listen((event) {
-    if (event != null) {
-      currentSeed = event['seed'] ?? "0";
-      sessionBalance = event['balance'] ?? "0.0000";
-      isMiningActive = true; // ATIVAÇÃO: Só vira true quando o started.dart enviar dados
-    }
-  });
-
-  // Loop de atualização da notificação via Local Notifications
-  Timer.periodic(const Duration(seconds: 2), (timer) async {
-    if (service is AndroidServiceInstance) {
-      // SÓ EXIBE A NOTIFICAÇÃO SE A MINERAÇÃO TIVER SIDO INICIADA
-      if (isMiningActive && await service.isForegroundService()) {
-        flutterLocalNotificationsPlugin.show(
-          888,
-          'EARNINGS: $sessionBalance INX',
-          'TICKET: $currentSeed',
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'enx_mining_channel',
-              'ENX MINING SERVICE',
-              icon: 'front_loader', 
-              ongoing: true,
-              importance: Importance.low,
-              priority: Priority.low,
-              showWhen: false,
-            ),
-          ),
-        );
-      }
-    }
   });
 }
 

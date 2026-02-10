@@ -3,8 +3,9 @@ import 'dart:async';
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:battery_plus/battery_plus.dart';
-// NOVO IMPORT PARA COMUNICAÇÃO COM O BACKGROUND
 import 'package:flutter_background_service/flutter_background_service.dart';
+// IMPORT NECESSÁRIO PARA AS NOTIFICAÇÕES LOCAIS
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 // NOVOS IMPORTS DE SEGURANÇA
 import '../../core/security/enx_security.dart';
@@ -28,6 +29,9 @@ class _InasxStartedState extends State<InasxStarted> {
   final Battery _battery = Battery();
   Timer? _ramTimer;
   StreamSubscription? _batterySubscription;
+  
+  // Instância de Notificação
+  final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
   
   // Rede
   final InasxNetwork _network = InasxNetwork(
@@ -54,6 +58,26 @@ class _InasxStartedState extends State<InasxStarted> {
     _ramTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  // Função para atualizar a notificação com o ícone front_loader
+  void _updateNotification(String seed, String balance) {
+    _notificationsPlugin.show(
+      888,
+      'EARNINGS: $balance INX',
+      'TICKET: $seed',
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'enx_mining_channel',
+          'INASX MINER SERVICE',
+          icon: 'front_loader',
+          ongoing: true,
+          importance: Importance.low,
+          priority: Priority.low,
+          showWhen: false,
+        ),
+      ),
+    );
   }
 
   // Monitor de RAM via Kernel
@@ -90,7 +114,7 @@ class _InasxStartedState extends State<InasxStarted> {
     try {
       if (Platform.isAndroid) {
         AndroidDeviceInfo info = await deviceInfo.androidInfo;
-        deviceName = "DEVICE ${info.model} ";
+        deviceName = "${info.model} ";
       } else {
         deviceName = "EnX Desktop Node";
       }
@@ -142,11 +166,8 @@ class _InasxStartedState extends State<InasxStarted> {
 
       setState(() => currentNonce = actionHash);
 
-      // PONTE PARA A NOTIFICAÇÃO: Envia Seed e Saldo para o Background
-      FlutterBackgroundService().invoke('updateData', {
-        "seed": actionHash,
-        "balance": sessionInx.toStringAsFixed(4),
-      });
+      // DISPARO DA NOTIFICAÇÃO (Lógica que estava no Main agora está aqui)
+      _updateNotification(actionHash, sessionInx.toStringAsFixed(4));
 
       _addLog("[HARDWARE] Your ticket: $actionHash");
       
@@ -164,11 +185,8 @@ class _InasxStartedState extends State<InasxStarted> {
           sessionInx += reward;
         });
 
-        // Atualiza novamente após receber a recompensa
-        FlutterBackgroundService().invoke('updateData', {
-          "seed": actionHash,
-          "balance": sessionInx.toStringAsFixed(4),
-        });
+        // Atualiza a notificação após receber recompensa
+        _updateNotification(actionHash, sessionInx.toStringAsFixed(4));
 
         _addLog("[SYSTEM] Rewarded: +$reward INX");
       } else {
