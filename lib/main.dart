@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 // Importando as telas
 import 'screens/splashscreen.dart';
@@ -28,18 +29,31 @@ Future<void> main() async {
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
 
+  // Canal necessário para o Android reconhecer o serviço
+  const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    'enx_mining_channel', 
+    'INASX MINER SERVICE',
+    importance: Importance.low, 
+  );
+
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(channel);
+
   await service.configure(
     androidConfiguration: AndroidConfiguration(
       onStart: onStart,
-      autoStart: false, // O serviço NÃO inicia sozinho, evitando a folha
+      autoStart: false,
       isForegroundMode: true,
       notificationChannelId: 'enx_mining_channel',
-      initialNotificationTitle: '', // Sem texto
-      initialNotificationContent: '', // Sem texto
+      initialNotificationTitle: 'Miner Inasx',
+      initialNotificationContent: 'Initiation...',
       foregroundServiceNotificationId: 888,
     ),
     iosConfiguration: IosConfiguration(
-      autoStart: false,
+      autoStart: true,
       onForeground: onStart,
       onBackground: onIosBackground,
     ),
@@ -49,6 +63,9 @@ Future<void> initializeService() async {
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
   DartPluginRegistrant.ensureInitialized();
+  
+  // O onStart agora é apenas um container vazio para manter o serviço rodando.
+  // Toda a lógica de notificação foi movida para o started.dart
   
   service.on('stopService').listen((event) {
     service.stopSelf();
