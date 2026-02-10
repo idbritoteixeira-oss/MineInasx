@@ -50,9 +50,8 @@ Future<void> initializeService() async {
       isForegroundMode: true,
       notificationChannelId: 'enx_mining_channel',
       initialNotificationTitle: 'MINER INASX',
-      initialNotificationContent: 'Aguardando inicialização...',
+      initialNotificationContent: 'Waiting...',
       foregroundServiceNotificationId: 888,
-      // Removido o parâmetro defaultNotificationIcon que causava erro no seu print
     ),
     iosConfiguration: IosConfiguration(
       autoStart: true,
@@ -69,6 +68,7 @@ void onStart(ServiceInstance service) async {
   // Variáveis de estado da sessão
   String currentSeed = "0";
   String sessionBalance = "0.0000";
+  bool isMiningActive = false; // NOVA TRAVA: Começa desativado
 
   service.on('stopService').listen((event) {
     service.stopSelf();
@@ -79,25 +79,28 @@ void onStart(ServiceInstance service) async {
     if (event != null) {
       currentSeed = event['seed'] ?? "0";
       sessionBalance = event['balance'] ?? "0.0000";
+      isMiningActive = true; // ATIVAÇÃO: Só vira true quando o started.dart enviar dados
     }
   });
 
-  // Loop de atualização da notificação via Local Notifications (Garante o ícone e os dados)
-  Timer.periodic(const Duration(seconds: 90), (timer) async {
+  // Loop de atualização da notificação via Local Notifications
+  Timer.periodic(const Duration(seconds: 2), (timer) async {
     if (service is AndroidServiceInstance) {
-      if (await service.isForegroundService()) {
+      // SÓ EXIBE A NOTIFICAÇÃO SE A MINERAÇÃO TIVER SIDO INICIADA
+      if (isMiningActive && await service.isForegroundService()) {
         flutterLocalNotificationsPlugin.show(
           888,
           'EARNINGS: $sessionBalance INX',
-          'SEED: $currentSeed',
+          'TICKET: $currentSeed',
           const NotificationDetails(
             android: AndroidNotificationDetails(
               'enx_mining_channel',
               'ENX MINING SERVICE',
-              icon: 'front_loader', // Usa o tratorzinho front_loader.png
+              icon: 'front_loader', 
               ongoing: true,
               importance: Importance.low,
               priority: Priority.low,
+              showWhen: false,
             ),
           ),
         );

@@ -105,21 +105,21 @@ class _EnXSplashScreenState extends State<EnXSplashScreen> {
                               children: [
                                 _buildMenuButton(
                                   context,
-                                  "INICIAR MINERAÇÃO", 
+                                  "START MINING", 
                                   '/initiation',
                                   const Color(0xFF1D2A4E).withOpacity(0.8),
                                 ),
                                 const SizedBox(height: 15),
                                 _buildMenuButton(
                                   context,
-                                  "CRIAR INASX",       
+                                  "CREATE INASX",       
                                   'com.inasx.app',    
                                   Colors.transparent,
                                   showBorder: true,
                                 ),
                                 const SizedBox(height: 60),
                                 Text(
-                                  "ENX OS • MINE INASX v1.0", 
+                                  "ENX OS • MINE INASX v1.4", 
                                   style: TextStyle(
                                     color: const Color(0xFF64FFDA).withOpacity(0.2),
                                     fontSize: 7,
@@ -149,7 +149,7 @@ class _EnXSplashScreenState extends State<EnXSplashScreen> {
       child: ElevatedButton(
         onPressed: () {
           if (route == 'com.inasx.app') {
-             debugPrint("Redirecionando para registro externo...");
+             debugPrint("Redirecting to external record...");
           } else {
             Navigator.pushNamed(context, route);
           }

@@ -90,13 +90,13 @@ class _InasxStartedState extends State<InasxStarted> {
     try {
       if (Platform.isAndroid) {
         AndroidDeviceInfo info = await deviceInfo.androidInfo;
-        deviceName = "${info.manufacturer} ${info.model}";
+        deviceName = "DEVICE ${info.model} ";
       } else {
         deviceName = "EnX Desktop Node";
       }
     } catch (_) { deviceName = "Unknown Worker"; }
 
-    _ramTimer = Timer.periodic(const Duration(seconds: 1), (_) => _updateRamUsage());
+    _ramTimer = Timer.periodic(const Duration(seconds: 5), (_) => _updateRamUsage());
 
     _batterySubscription = _battery.onBatteryStateChanged.listen((_) async {
       int level = await _battery.batteryLevel;
@@ -125,13 +125,13 @@ class _InasxStartedState extends State<InasxStarted> {
     
     _addLog("--- [INASX MINER PoS/P Worker] ---");
     _addLog("[INX WALLET] ID: ${widget.idInasx}");
-    _addLog("[STATUS] Synchronizing with network seed");
+    _addLog("[STATUS] Synchronizing with network");
 
     while (mounted) {
       int timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       int cycleSeed = timestamp ~/ 180;
 
-      _addLog("[HARDWARE] Starting ticket registration: $cycleSeed");
+      _addLog("[SYSTEM] Starting ticket registration: $cycleSeed");
 
       BigInt idVal = BigInt.parse(widget.idInasx).toUnsigned(64);
       BigInt seedVal = BigInt.from(cycleSeed).toUnsigned(64);

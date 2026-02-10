@@ -16,7 +16,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
   final TextEditingController _idController = TextEditingController();
   bool _isValidating = false;
   bool _rememberId = true; // Estado do Checkbox
-  String _statusText = "AGUARDANDO CONEXÃO COM A REDE...";
+  String _statusText = "Waiting for network connection...";
 
   @override
   void initState() {
@@ -57,7 +57,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
     
     setState(() {
       _isValidating = true;
-      _statusText = "PESQUISANDO EM /URONS/$id.NAS...";
+      _statusText = "SEARCHING IN $id";
     });
 
     String response = await network.verificarExistenciaId(id);
@@ -66,10 +66,10 @@ class _InasxInitiationState extends State<InasxInitiation> {
       // Salva o ID antes de navegar se a opção estiver marcada
       await _handleSaveId(id);
 
-      setState(() => _statusText = "ID VALIDADO. BAIXANDO CONTÊINER ENX...");
+      setState(() => _statusText = "ID VALIDATED. DOWNLOADING ENX CONTAINER...");
       await Future.delayed(const Duration(seconds: 1));
       
-      setState(() => _statusText = "CONTÊINER ENX SINCRONIZADOS.");
+      setState(() => _statusText = "ENX SYNCHRONIZED CONTAINERS.");
       await Future.delayed(const Duration(milliseconds: 800));
 
       if (!mounted) return;
@@ -80,14 +80,14 @@ class _InasxInitiationState extends State<InasxInitiation> {
       setState(() {
         _isValidating = false;
         if (response == "OFFLINE") {
-          _statusText = "ERRO: SERVIDOR CENTRAL FORA DE LINHA.";
-          _showError("Falha na conexão com o servidor EnX.");
+          _statusText = "ERROR: CENTRAL SERVER DOWN.";
+          _showError("Connection to the EnX server failed.");
         } else if (response == "ID_NOT_FOUND") {
-          _statusText = "ERRO: ID NÃO LOCALIZADO NO MULTIVERSO.";
-          _showError("Acesso Negado: Uron inexistente.");
+          _statusText = "ERROR: ID NOT FOUND.";
+          _showError("Access Denied: ID does not exist.");
         } else {
-          _statusText = "ERRO: RESPOSTA INESPERADA.";
-          _showError("Falha na validação: $response");
+          _statusText = "ERROR: UNEXPECTED RESPONSE.";
+          _showError("Validation failed: $response");
         }
       });
     }
@@ -133,7 +133,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
                 const SizedBox(height: 40),
                 
                 Text(
-                  "IDENTIFICAÇÃO DE MINERADOR",
+                  "Miner Identification",
                   style: TextStyle(
                     color: const Color(0xFF64FFDA).withOpacity(0.7),
                     fontSize: 10,
@@ -149,7 +149,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
                   enabled: !_isValidating,
                   style: const TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'monospace'),
                   decoration: InputDecoration(
-                    hintText: "INSIRA SEU ID_INASX",
+                    hintText: "ENTER YOUR ID_INASX",
                     hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontFamily: 'monospace'),
                     filled: true,
                     fillColor: const Color(0xFF1D2A4E).withOpacity(0.3),
@@ -180,7 +180,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
                       ),
                     ),
                     const Text(
-                      "LEMBRAR ID NO DISPOSITIVO",
+                      "REMEMBER ID",
                       style: TextStyle(color: Colors.white38, fontSize: 9, fontFamily: 'monospace'),
                     ),
                   ],
@@ -196,7 +196,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
                       if (_idController.text.isNotEmpty) {
                         _startMiningProtocol();
                       } else {
-                        _showError("ID necessário para minerar");
+                        _showError("ID required for mining.");
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -210,7 +210,7 @@ class _InasxInitiationState extends State<InasxInitiation> {
                     ),
                     child: _isValidating 
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF64FFDA)))
-                      : const Text("INICIAR PROCESSO", style: TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.bold, letterSpacing: 2)),
+                      : const Text("START MINING", style: TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.bold, letterSpacing: 2)),
                   ),
                 ),
 
