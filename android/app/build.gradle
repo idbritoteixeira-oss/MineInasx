@@ -24,7 +24,9 @@ def flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "
 android {
     namespace = "com.mineinasx.app"
     compileSdk = 35 
-    ndkVersion = flutter.ndkVersion
+    
+    // FIX: Forçando a versão exata que o EnX OS usa na Workflow
+    ndkVersion "25.2.9519653"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -53,7 +55,6 @@ android {
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
 
-        // Injeção para otimização de arquitetura (foco no seu Motorola arm64)
         externalNativeBuild {
             cmake {
                 cppFlags "-std=c++17 -O3"
@@ -62,7 +63,6 @@ android {
         }
     }
 
-    // Vinculação do motor de compilação C++
     externalNativeBuild {
         cmake {
             path "src/main/cpp/CMakeLists.txt"
