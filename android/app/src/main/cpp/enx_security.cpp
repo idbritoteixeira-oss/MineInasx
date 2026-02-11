@@ -18,8 +18,11 @@ extern "C" {
     }
 
     uint64_t EnX9(uint64_t seed) {
-        unsigned __int128 intermediate = (unsigned __int128)EnX6(seed) * 1234567 + 1;
-        return (uint64_t)(intermediate % 1000000000000ULL);
+        // Removido __int128 para compatibilidade total.
+        // Como o módulo é 1.000.000.000.000 (10^12), uint64_t (10^18) aguenta sobra.
+        uint64_t v6 = EnX6(seed);
+        uint64_t intermediate = (v6 * 1234567ULL) + 1;
+        return (intermediate % 1000000000000ULL);
     }
 
     void to_string_pad_native(uint64_t n, int width, char* out) {
@@ -35,8 +38,11 @@ extern "C" {
         }
         while (s.length() < (size_t)width) s += '0';
         std::reverse(s.begin(), s.end());
+        
         std::string final_s = s.substr(s.length() - width);
-        for (size_t i = 0; i < final_s.length(); i++) out[i] = final_s[i];
+        for (size_t i = 0; i < final_s.length(); i++) {
+            out[i] = final_s[i];
+        }
         out[final_s.length()] = '\0';
     }
 
@@ -45,16 +51,20 @@ extern "C" {
         while (res.length() < (size_t)alvo) {
             uint64_t n = 0;
             for (char c : res) n += (uint64_t)(c * 31);
-            uint64_t val = n * (res.length() + 1);
-            char pad[4];
-            to_string_pad_native(val, 3, pad);
+            uint64_t val = n * (uint64_t)(res.length() + 1);
+            
+            char pad[16]; // Buffer maior por segurança
+            to_string_pad_native(val % 1000, 3, pad); // Usando mod 1000 para manter o padrão EnXBase
             res += pad;
         }
         std::string final_res = res.substr(res.length() - alvo);
-        for (size_t i = 0; i < final_res.length(); i++) out[i] = final_res[i];
+        for (size_t i = 0; i < final_res.length(); i++) {
+            out[i] = final_res[i];
+        }
         out[final_res.length()] = '\0';
     }
 
+    // Nome unificado para a ponte FFI
     uint64_t solve_inasx_ticket(uint64_t seed) {
         return EnX9(seed);
     }
