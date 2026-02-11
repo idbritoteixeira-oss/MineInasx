@@ -5,7 +5,6 @@ import 'dart:io';
 typedef NativeEnX9 = Uint64 Function(Uint64 seed);
 typedef DartEnX9 = int Function(int seed);
 
-// Definição para a função de expansão de strings (Dwellers/Caminhos)
 typedef NativeExpandir = Void Function(Pointer<Utf8> base, Int32 alvo, Pointer<Utf8> out);
 typedef DartExpandir = void Function(Pointer<Utf8> base, int alvo, Pointer<Utf8> out);
 
@@ -14,46 +13,47 @@ class EnXSecurity {
       ? DynamicLibrary.open('libenx_security.so')
       : DynamicLibrary.process();
 
-  // Mapeia para o nome unificado no C++: solve_inasx_ticket
   static final DartEnX9 _enx9 = _lib
       .lookup<NativeFunction<NativeEnX9>>('solve_inasx_ticket')
       .asFunction();
 
   static String solveTicketNative(String idInasx, int seed) {
     try {
-      BigInt idVal = BigInt.parse(idInasx).toUnsigned(64);
-      BigInt seedVal = BigInt.from(seed).toUnsigned(64);
+      // Usamos BigInt para evitar qualquer perda de precisão com IDs gigantes
+      final BigInt idVal = BigInt.parse(idInasx);
+      final BigInt seedVal = BigInt.from(seed);
       
-      // Realiza o XOR de 64 bits para o argumento
-      int argument = (idVal ^ seedVal).toUnsigned(64).toInt();
+      // Realiza o XOR e força o resultado a caber em 64 bits (máscara 0xFFFFFFFFFFFFFFFF)
+      // Isso garante que o valor seja idêntico ao uint64_t do servidor e do C++
+      final BigInt xorResult = (idVal ^ seedVal).toUnsigned(64);
       
-      // Executa o EnX9 nativo
-      int result = _enx9(argument);
+      // Converte para o padrão de bits de 64 bits que o C++ espera
+      final int argument = xorResult.toSigned(64).toInt();
       
-      // Retorna com padding de 12 (Padrão Inasx PoP)
+      // Chama o motor nativo EnX9
+      final int result = _enx9(argument);
+      
+      // Retorna com os 12 dígitos cravados
       return result.toString().padLeft(12, '0');
     } catch (e) {
       return "000000000000";
     }
   }
 
-  /// Expande caminhos de banco de dados (Dwellers/Nation/Market)
   static String expandirCaminho(String base, int alvo) {
     final DartExpandir nativeExpandir = _lib
         .lookup<NativeFunction<NativeExpandir>>('expandir_native')
         .asFunction();
 
     final Pointer<Utf8> basePtr = base.toNativeUtf8();
-    // Aloca buffer para a string de saída + null terminator
     final Pointer<Utf8> outPtr = calloc<Uint8>(alvo + 1).cast<Utf8>();
 
     try {
       nativeExpandir(basePtr, alvo, outPtr);
       return outPtr.toDartString();
     } catch (e) {
-      return base; // Fallback para a base em caso de erro
+      return base;
     } finally {
-      // Limpeza de memória obrigatória para não vazar RAM no Motorola
       malloc.free(basePtr);
       malloc.free(outPtr);
     }
