@@ -31,10 +31,15 @@ jobs:
           gradle-version: 8.2
           cache-disabled: true
 
-      - name: Install Android NDK & CMake (Essencial para EnX .so)
+      - name: Install NDK, CMake & Android SDK 35 (Silent Install)
         run: |
-          SDKMANAGER=$(find $ANDROID_SDK_ROOT -name "sdkmanager" | head -n 1)
-          yes | "$SDKMANAGER" --sdk_root="$ANDROID_SDK_ROOT" "ndk;25.2.9519653" "cmake;3.22.1"
+          # Aceita licenças primeiro de forma isolada
+          yes | sdkmanager --licenses > /dev/null
+          
+          # Instala tudo o que o EnX OS precisa em um único comando estável
+          sdkmanager "ndk;25.2.9519653" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0"
+          
+          # Exporta variáveis globais para o build do Gradle
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/25.2.9519653" >> $GITHUB_ENV
         shell: bash
 
@@ -67,14 +72,6 @@ jobs:
             chmod +x ./gradlew || true
           fi
 
-      - name: Install Android SDK platforms & build-tools (SDK 35)
-        run: |
-          set -euo pipefail
-          SDKMANAGER=$(find $ANDROID_SDK_ROOT -name "sdkmanager" | head -n 1)
-          "$SDKMANAGER" --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-          yes | "$SDKMANAGER" --sdk_root="$ANDROID_SDK_ROOT" --licenses || true
-        shell: bash
-
       - name: Clean build
         run: flutter clean
 
@@ -82,6 +79,7 @@ jobs:
         run: |
           PROJECT_ROOT=$(find . -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
           cd $PROJECT_ROOT
+          # Removido '|| true' para garantir que o erro seja reportado se o C++ falhar
           flutter build apk --release --no-tree-shake-icons
 
       - name: Verify and Upload APK
