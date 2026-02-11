@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -6,7 +6,6 @@ import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-// IMPORTS DE SEGURANÇA E REDE EnX OS
 import '../../core/security/enx_security.dart';
 import '../../core/network/inasx_network.dart';
 
@@ -19,25 +18,20 @@ class InasxStarted extends StatefulWidget {
 }
 
 class _InasxStartedState extends State<InasxStarted> {
-  // Controle de Interface
   List<String> logs = [];
   final ScrollController _scrollController = ScrollController();
   
-  // Hardware
   final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
   final Battery _battery = Battery();
   Timer? _ramTimer;
   StreamSubscription? _batterySubscription;
   
-  // Instância de Notificação
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
   
-  // Rede
   final InasxNetwork _network = InasxNetwork(
     serverUrl: 'https://8b48ce67-8062-40e3-be2d-c28fd3ae4f01-00-117turwazmdmc.janeway.replit.dev'
   );
 
-  // Estado da Mineração
   double ramUsage = 0.0;
   int batteryLevel = 100;
   String currentNonce = "0"; 
@@ -59,7 +53,6 @@ class _InasxStartedState extends State<InasxStarted> {
     super.dispose();
   }
 
-  // LÓGICA DE NOTIFICAÇÃO CENTRALIZADA
   void _updateNotification(String seed, String balance) {
     _notificationsPlugin.show(
       888,
@@ -69,7 +62,7 @@ class _InasxStartedState extends State<InasxStarted> {
         android: AndroidNotificationDetails(
           'enx_mining_channel',
           'INASX MINER SERVICE',
-          icon: 'front_loader', // Ícone oficial do tratorzinho
+          icon: 'front_loader',
           ongoing: false,
           importance: Importance.min,
           priority: Priority.min,
@@ -79,7 +72,6 @@ class _InasxStartedState extends State<InasxStarted> {
     );
   }
 
-  // Monitor de RAM via Kernel
   Future<void> _updateRamUsage() async {
     try {
       if (Platform.isAndroid) {
@@ -144,9 +136,7 @@ class _InasxStartedState extends State<InasxStarted> {
   }
 
   void _workerLoop() async {
-    // LIGA O SERVIÇO MANUALMENTE PARA EVITAR A FOLHA NO INÍCIO DO APP
     FlutterBackgroundService().startService(); 
-    
     await Future.delayed(const Duration(seconds: 1)); 
     
     _addLog("--- [INASX MINER PoS/P Worker] ---");
@@ -159,16 +149,11 @@ class _InasxStartedState extends State<InasxStarted> {
 
       _addLog("[SYSTEM] Starting ticket registration: $cycleSeed");
 
-      BigInt idVal = BigInt.parse(widget.idInasx).toUnsigned(64);
-      BigInt seedVal = BigInt.from(cycleSeed).toUnsigned(64);
-      BigInt argument = (idVal ^ seedVal).toUnsigned(64);
-
-      BigInt actionRaw = EnX_Low.EnX9(argument);
-      String actionHash = EnXBase.to_string_pad(actionRaw, 12);
+      // TRANSIÇÃO PARA O COFRE NATIVO (.so)
+      // O cálculo do ticket agora é feito via FFI, protegendo a lógica EnX9
+      String actionHash = EnXSecurity.solveTicketNative(widget.idInasx, cycleSeed);
 
       setState(() => currentNonce = actionHash);
-
-      // DISPARO IMEDIATO DA NOTIFICAÇÃO COM DADOS REAIS
       _updateNotification(actionHash, sessionInx.toStringAsFixed(4));
 
       _addLog("[HARDWARE] Your ticket: $actionHash");
@@ -187,9 +172,7 @@ class _InasxStartedState extends State<InasxStarted> {
           sessionInx += reward;
         });
 
-        // ATUALIZAÇÃO PÓS-RECOMPENSA
         _updateNotification(actionHash, sessionInx.toStringAsFixed(4));
-
         _addLog("[SYSTEM] Rewarded: +$reward INX");
       } else {
         _addLog("Response: $response");
@@ -202,7 +185,6 @@ class _InasxStartedState extends State<InasxStarted> {
     }
   }
 
-  // --- INTERFACE GRÁFICA INTACTA ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -215,13 +197,10 @@ class _InasxStartedState extends State<InasxStarted> {
             children: [
               Text("[ $deviceName ]", style: const TextStyle(color: Color(0xFF64FFDA), fontFamily: 'monospace', fontWeight: FontWeight.bold)),
               const Divider(color: Colors.white24),
-              
               const SizedBox(height: 5),
               _buildBar("RAM ", ramUsage),
               _buildBar("BAT ", batteryLevel / 100.0),
-
               const SizedBox(height: 20),
-              
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -236,9 +215,7 @@ class _InasxStartedState extends State<InasxStarted> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 20),
-
               Expanded(
                 child: Container(
                   width: double.infinity,
@@ -254,7 +231,6 @@ class _InasxStartedState extends State<InasxStarted> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 10),
               Text(
                 "ID_ACTIVE: ${widget.idInasx} | HASH: $currentNonce",

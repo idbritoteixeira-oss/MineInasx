@@ -24,6 +24,7 @@ dependencies:
   # NOVOS: Essenciais para o Worker rodar em Background e enviar notificações
   flutter_background_service: ^5.0.10
   flutter_local_notifications: ^17.1.2
+  ffi: ^2.1.3
 
 dev_dependencies:
   flutter_test:

@@ -31,6 +31,13 @@ jobs:
           gradle-version: 8.2
           cache-disabled: true
 
+      - name: Install Android NDK & CMake (Essencial para EnX .so)
+        run: |
+          SDKMANAGER=$(find $ANDROID_SDK_ROOT -name "sdkmanager" | head -n 1)
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_SDK_ROOT" "ndk;25.2.9519653" "cmake;3.22.1"
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/25.2.9519653" >> $GITHUB_ENV
+        shell: bash
+
       - name: Restore Keystore and Key Properties
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/mineinasx-release.jks
@@ -46,6 +53,7 @@ jobs:
           mkdir -p android
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "sdk.dir=$ANDROID_SDK_ROOT" >> android/local.properties
+          echo "ndk.dir=$ANDROID_SDK_ROOT/ndk/25.2.9519653" >> android/local.properties
 
       - name: Restore Gradle Wrapper
         run: |
@@ -63,7 +71,6 @@ jobs:
         run: |
           set -euo pipefail
           SDKMANAGER=$(find $ANDROID_SDK_ROOT -name "sdkmanager" | head -n 1)
-          echo "Using sdkmanager: $SDKMANAGER"
           "$SDKMANAGER" --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
           yes | "$SDKMANAGER" --sdk_root="$ANDROID_SDK_ROOT" --licenses || true
         shell: bash
@@ -75,14 +82,12 @@ jobs:
         run: |
           PROJECT_ROOT=$(find . -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
           cd $PROJECT_ROOT
-          # Adicionado '|| true' para que a Action não pare se o Flutter não "enxergar" o APK que o Gradle gerou
-          flutter build apk --release --no-tree-shake-icons || true
+          flutter build apk --release --no-tree-shake-icons
 
       - name: Verify and Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: EnX-Mine-Inasx-Release
-          # Busca recursiva para encontrar o APK em qualquer um dos caminhos possíveis de build
           path: |
             **/build/app/outputs/flutter-apk/app-release.apk
             **/build/outputs/apk/release/app-release.apk

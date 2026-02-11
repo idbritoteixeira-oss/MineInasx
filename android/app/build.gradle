@@ -12,7 +12,6 @@ if (localPropertiesFile.exists()) {
     }
 }
 
-// Carregamento da Keystore - Essencial para paridade com a Workflow
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
@@ -38,12 +37,10 @@ android {
 
     signingConfigs {
         release {
-            // Se as propriedades existirem, configuramos a assinatura oficial EnX
             if (keystoreProperties.containsKey('storeFile')) {
                 keyAlias = keystoreProperties['keyAlias']
                 keyPassword = keystoreProperties['keyPassword']
                 storePassword = keystoreProperties['storePassword']
-                // A Workflow cria o arquivo dentro de android/app/
                 storeFile = file(keystoreProperties['storeFile'])
             }
         }
@@ -55,11 +52,25 @@ android {
         targetSdk = 35
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
+
+        // Injeção para otimização de arquitetura (foco no seu Motorola arm64)
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++17 -O3"
+                abiFilters "arm64-v8a", "armeabi-v7a", "x86_64"
+            }
+        }
+    }
+
+    // Vinculação do motor de compilação C++
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+        }
     }
 
     buildTypes {
         release {
-            // Atribui a assinatura de release apenas se a chave for encontrada
             signingConfig = keystoreProperties.containsKey('storeFile') ? signingConfigs.release : signingConfigs.debug
             
             minifyEnabled false

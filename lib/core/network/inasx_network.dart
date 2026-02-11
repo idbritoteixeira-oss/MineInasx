@@ -8,15 +8,12 @@ class InasxNetwork {
     this.serverUrl = 'https://8b48ce67-8062-40e3-be2d-c28fd3ae4f01-00-117turwazmdmc.janeway.replit.dev',
   });
 
-  /// VALIDAÇÃO PARA initiation.dart (Varredura de Uron)
   Future<String> verificarExistenciaId(String id) async {
     try {
-      // Formato estrito para o stringstream C++
       String packet = "LOGIN|$id|CHECK_EXISTENCE|0|0"; 
-      
+
       final response = await http.post(
         Uri.parse(serverUrl),
-        // INJEÇÃO: Enviando como plain text para evitar o encodamento de %7C
         headers: {"Content-Type": "text/plain"},
         body: packet, 
       ).timeout(const Duration(seconds: 10));
@@ -30,15 +27,12 @@ class InasxNetwork {
     }
   }
 
-  /// LÓGICA DE MINERAÇÃO (Para started.dart - Ciclo PoP)
   Future<String> sendSubmitPop(String id, String actionHash, int seed) async {
     try {
-      // CMD|ID|E1|E2|E3
       String packet = "SUBMIT_POP|$id|$actionHash|$seed|0";
 
       final response = await http.post(
         Uri.parse(serverUrl),
-        // INJEÇÃO: Força o envio bruto, idêntico ao Worker C++
         headers: {"Content-Type": "text/plain"},
         body: packet,
       ).timeout(const Duration(seconds: 8)); 
