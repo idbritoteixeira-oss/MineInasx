@@ -37,9 +37,9 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: "assets/images/miner.png"
+  image_path: "assets/images/logo.png"
   adaptive_icon_background: "#020817"
-  adaptive_icon_foreground: "assets/images/miner.png"
+  adaptive_icon_foreground: "assets/images/logo.png"
 
 flutter:
   uses-material-design: true
@@ -47,7 +47,6 @@ flutter:
   # DECLARAÇÃO DE ASSETS
   assets:
     - assets/images/logo.png
-    - assets/images/miner.png
     - assets/sounds/into.mp3
     - assets/sounds/coin.mp3
     - assets/images/enx.png

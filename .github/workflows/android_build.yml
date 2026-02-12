@@ -91,6 +91,5 @@ jobs:
           path: |
             **/build/app/outputs/flutter-apk/app-release.apk
             **/build/outputs/apk/release/*.apk
-            **/app-release.apk
           if-no-files-found: error
              

@@ -37,7 +37,7 @@ class _InasxStartedState extends State<InasxStarted> {
   String currentNonce = "0"; 
   double sessionInx = 0.0000;
   int blocksValidated = 0;
-  String deviceName = "Detectando...";
+  String deviceName = "Waiting...";
 
   @override
   void initState() {

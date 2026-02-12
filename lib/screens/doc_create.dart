@@ -13,44 +13,30 @@ class _EnXDocCreatePageState extends State<EnXDocCreatePage> {
     {
       'level': '1° ENX OS',
       'logo': 'assets/images/enx.png',
-      'sub': 'O Sistema Primário',
-      'desc': 'Núcleo operacional responsável pela criptografia EnX18, EnX32 e o algoritmo EnX609. Gestão de segurança de baixo nível.',
-      'path': 'Kernel/Security/Crypt'
+      'sub': 'Official operating system',
+      'desc': 'Operating System: At a lower level, the OS kernel manages hardware resources and can utilize forward-looking cryptography to protect data in the file system. It is a dedicated, tamper-proof physical device or module specifically designed to generate, store, and manage cryptographic keys, as well as perform cryptographic operations in a secure environment. EnXcripto provides hardware-accelerated encryption and enforces strict key usage policies. They ensure that private keys never leave the secure environment, making it extremely difficult for attackers to decrypt messages or files..',
+      'path': 'Kernel'
     },
     {
       'level': '2° DWELLERS',
       'logo': 'assets/images/dwellers.png',
-      'sub': 'Gerenciador de Identidade',
-      'desc': 'O "Nation" é o banco de dados central. Ele gerencia todos os IDs globais e validação de identidades.',
-      'path': 'Frameworks/Dwellers/nation'
+      'sub': 'Identity Manager',
+      'desc': 'An identity management system is a database that creates and stores identifying information about the people and devices that need to access the organizations data and resources EnX.',
+      'path': 'System Call Interface'
     },
     {
       'level': '3° INASX',
       'logo': 'assets/images/inasx.png',
       'sub': 'Cryptocurrency',
-      'desc': 'Sistema de economia digital. Responsável pela validação do Multiverso de transações e saldo INX.',
-      'path': 'Frameworks/Inasx/multiverse'
+      'desc': 'Cryptocurrency is a form of digital money or virtual asset that does not have a physical representation, such as banknotes or metal coins. They operate through a decentralized computer network, meaning they do not depend on central banks or governments for issuance or control. ',
+      'path': 'User Space Wallet'
     },
     {
       'level': '3.1° MINEINASX',
-      'logo': 'assets/images/miner.png',
-      'sub': 'Minerador',
-      'desc': 'Motor de processamento de tickets. Ciclo EnX_Low (1-3-6-9) a cada 180 segundos para validação de blocos.',
-      'path': 'worker_node/logs'
-    },
-    {
-      'level': '3.2° PIGEON',
-      'logo': 'assets/images/pigeon.png',
-      'sub': 'Mensageiro',
-      'desc': 'Comunicação criptografada ponto-a-ponto. Autenticação temporária para máxima privacidade.',
-      'path': 'Frameworks/Pigeon/mailbox'
-    },
-    {
-      'level': '3.3° FREEMARKET',
-      'logo': 'assets/images/fmarket.png',
-      'sub': 'Marketplace',
-      'desc': 'Ambiente descentralizado para compra e venda de ativos. Gestão de vendedores e ofertas globais.',
-      'path': 'Frameworks/FreeMarket/seller'
+      'logo': 'assets/images/logo.png',
+      'sub': 'Miner',
+      'desc': 'The creation of new blocks and the validation of transactions do not depend on powerful hardware, but rather on the amount of coins a user keeps "locked" on the network. How PoS works Unlike conventional mining, which requires high energy consumption and complex machines, PoS works through Staking: Validators: Instead of miners, the network uses validators, who are chosen randomly or based on their stake. Guarantee: To participate, the user must deposit a minimum amount of the native currency as collateral. If the validator acts in bad faith, they may lose this amount. Rewards: Validators receive new coins as a reward for the security service provided to the network.',
+      'path': 'Proof of Stake'
     },
   ];
 
@@ -59,7 +45,7 @@ class _EnXDocCreatePageState extends State<EnXDocCreatePage> {
     return Scaffold(
       backgroundColor: const Color(0xFF020817),
       appBar: AppBar(
-        title: const Text('DECRYPTING DOCUMENTATION...', 
+        title: const Text('REQUISITOS MÍNIMOS...', 
           style: TextStyle(fontFamily: 'monospace', fontSize: 14, color: Color(0xFF64FFDA))),
         backgroundColor: const Color(0xFF020817),
         elevation: 0,
